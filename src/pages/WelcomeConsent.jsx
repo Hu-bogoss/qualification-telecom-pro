@@ -15,8 +15,8 @@ const ImprovedWelcomeConsent = () => {
     professional: false
   });
   const [errors, setErrors] = useState({});
-  const [timeLeft, setTimeLeft] = useState(3600); // 1 hour
-  const [videoPlaying, setVideoPlaying] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(3600);
+  const [percentage, setPercentage] = useState(0);
 
   // Countdown timer
   useEffect(() => {
@@ -24,6 +24,20 @@ const ImprovedWelcomeConsent = () => {
       setTimeLeft(prev => (prev > 0 ? prev - 1 : 3600));
     }, 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Counter animation for headline
+  useEffect(() => {
+    let count = 0;
+    const interval = setInterval(() => {
+      if (count < 20) {
+        count++;
+        setPercentage(count);
+      } else {
+        clearInterval(interval);
+      }
+    }, 50);
+    return () => clearInterval(interval);
   }, []);
 
   const minutes = Math.floor(timeLeft / 60);
@@ -102,22 +116,31 @@ const ImprovedWelcomeConsent = () => {
               </div>
             </motion.div>
 
-            {/* Main Headline */}
-            <motion.h1
+            {/* Main Headline with Counter Animation */}
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.8 }}
-              className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight"
+              transition={{ duration: 0.8 }}
+              className="text-center"
             >
-              Baissez votre facture télécom de
-              <motion.span
-                className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 leading-tight">
+                Baissez votre facture télécom de
+              </h1>
+
+              <motion.div
+                key={percentage}
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.2 }}
+                className="text-7xl md:text-8xl lg:text-9xl font-black text-blue-600 mb-4"
               >
-                20% en 2 minutes
-              </motion.span>
-            </motion.h1>
+                {percentage}%
+              </motion.div>
+
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
+                en 2 minutes
+              </h1>
+            </motion.div>
 
             {/* Subheadline */}
             <motion.p
