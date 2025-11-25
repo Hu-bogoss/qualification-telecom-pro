@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Shield, CheckCircle, Phone, Zap, Euro, ArrowRight, Play, Users, TrendingDown } from 'lucide-react';
@@ -17,17 +17,25 @@ const ImprovedWelcomeConsent = () => {
   const [errors, setErrors] = useState({});
   const [timeLeft, setTimeLeft] = useState(3600);
   const [percentage, setPercentage] = useState(0);
+  const timerInitializedRef = useRef(false);
+  const percentageInitializedRef = useRef(false);
 
-  // Countdown timer
+  // Countdown timer - Only initialize ONCE
   useEffect(() => {
+    if (timerInitializedRef.current) return;
+    timerInitializedRef.current = true;
+
     const timer = setInterval(() => {
       setTimeLeft(prev => (prev > 0 ? prev - 1 : 3600));
     }, 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Counter animation for headline
+  // Counter animation for headline - Only initialize ONCE
   useEffect(() => {
+    if (percentageInitializedRef.current) return;
+    percentageInitializedRef.current = true;
+
     let count = 0;
     const interval = setInterval(() => {
       if (count < 20) {
