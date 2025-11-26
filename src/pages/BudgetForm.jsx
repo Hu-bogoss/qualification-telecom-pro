@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Phone, Wifi, Shield, Building, ArrowRight, ArrowLeft, HelpCircle } from 'lucide-react';
-import Card from '../components/Card';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { validateBudgetInputs } from '../utils/calculations';
 
 const BudgetForm = () => {
   const navigate = useNavigate();
+  const [currentQuestion, setCurrentQuestion] = useState(0);
   const [formData, setFormData] = useState({
     fixedBudget: '',
     internetBudget: '',
@@ -17,433 +17,407 @@ const BudgetForm = () => {
     multiSite: false
   });
   const [errors, setErrors] = useState({});
-  const [showTooltips, setShowTooltips] = useState({});
-  const [currentStep, setCurrentStep] = useState(1);
+  const [completed, setCompleted] = useState(false);
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-
-  const toggleTooltip = (field) => {
-    setShowTooltips(prev => ({
-      ...prev,
-      [field]: !prev[field]
-    }));
-  };
-
-  const handleSubmit = () => {
-    const validation = validateBudgetInputs(formData);
-
-    if (!validation.isValid) {
-      setErrors(validation.errors);
-      return;
-    }
-
-    localStorage.setItem('budgetData', JSON.stringify({
-      ...formData,
-      totalBudget: validation.totalBudget,
-      isEligible: validation.isEligible
-    }));
-
-    navigate('/role');
-  };
-
-  const handleBack = () => {
-    navigate('/');
-  };
-
-  const budgetItems = [
+  const questions = [
     {
       id: 'fixedBudget',
-      icon: Phone,
-      label: 'Budget téléphonie fixe mensuel',
-      placeholder: 'Ex: 150',
-      tooltip: 'Inclut: lignes fixes, standard téléphonique, communications nationales/internationales',
-      required: true
+      type: 'number',
+      title: 'Quel est votre budget téléphonie fixe mensuel?',
+      description: 'Lignes fixes, standard, communications nationales/internationales',
+      placeholder: '150',
+      unit: '€/mois',
+      hint: 'Montant approximatif'
     },
     {
       id: 'internetBudget',
-      icon: Wifi,
-      label: 'Budget internet mensuel',
-      placeholder: 'Ex: 80',
-      tooltip: 'Inclut: connexions internet, liaisons spécialisées, backup 4G/5G',
-      required: true
+      type: 'number',
+      title: 'Quel est votre budget internet mensuel?',
+      description: 'Connexions internet, liaisons spécialisées, backup 4G/5G',
+      placeholder: '80',
+      unit: '€/mois',
+      hint: 'Montant approximatif'
+    },
+    {
+      id: 'phoneSystem',
+      type: 'select',
+      title: 'Quel est votre standard téléphonique?',
+      description: 'Cela nous aide à calculer vos économies',
+      options: [
+        { value: 'rental', label: 'En location', desc: 'Loué chez un opérateur' },
+        { value: 'purchase', label: 'Acheté', desc: 'Équipement en propriété' },
+        { value: 'none', label: 'Aucun', desc: 'Pas de standard' }
+      ]
+    },
+    {
+      id: 'cybersecurity',
+      type: 'select',
+      title: 'Avez-vous une solution cybersécurité?',
+      description: 'Antivirus, firewall, sécurité réseau...',
+      options: [
+        { value: 'yes', label: 'Oui', desc: 'Solution déployée' },
+        { value: 'no', label: 'Non', desc: 'Aucune' },
+        { value: 'unsure', label: 'Je ne sais pas', desc: 'Incertain' }
+      ]
+    },
+    {
+      id: 'companySize',
+      type: 'select',
+      title: 'Combien d\'employés avez-vous?',
+      description: 'Cela nous aide à personnaliser notre analyse',
+      options: [
+        { value: '0-5', label: '0 à 5', desc: 'Micro-entreprise' },
+        { value: '5-10', label: '5 à 10', desc: 'Petite équipe' },
+        { value: '10-20', label: '10 à 20', desc: 'PME' },
+        { value: '20+', label: '20+', desc: 'Entreprise' }
+      ]
+    },
+    {
+      id: 'multiSite',
+      type: 'boolean',
+      title: 'Avez-vous plusieurs sites ou bureaux?',
+      description: 'Cela affecte le calcul de vos économies'
     }
   ];
 
-  const phoneSystemOptions = [
-    { value: 'rental', label: 'En location', desc: 'Loué chez un opérateur' },
-    { value: 'purchase', label: 'Acheté', desc: 'Équipement en propriété' },
-    { value: 'none', label: 'Aucun', desc: 'Pas de standard' }
-  ];
+  // Si cybersecurity === 'yes', ajouter la question du budget cybersécurité
+  const displayQuestions = formData.cybersecurity === 'yes' && currentQuestion === 4
+    ? [
+        ...questions.slice(0, 4),
+        {
+          id: 'cybersecurityBudget',
+          type: 'number',
+          title: 'Quel est votre budget cybersécurité mensuel?',
+          description: 'Antivirus, firewall, formations de sécurité...',
+          placeholder: '50',
+          unit: '€/mois',
+          hint: 'Montant approximatif'
+        },
+        ...questions.slice(4)
+      ]
+    : questions;
 
-  const cybersecurityOptions = [
-    { value: 'yes', label: 'Oui', desc: 'Solution déployée' },
-    { value: 'no', label: 'Non', desc: 'Aucune protection' },
-    { value: 'unsure', label: 'Je ne sais pas', desc: 'Incertain' }
-  ];
+  const question = displayQuestions[currentQuestion];
+  const progress = ((currentQuestion + 1) / displayQuestions.length) * 100;
 
-  const companySizeOptions = [
-    { value: '0-5', label: '0 à 5 employés' },
-    { value: '5-10', label: '5 à 10 employés' },
-    { value: '10-20', label: '10 à 20 employés' },
-    { value: '20+', label: 'Plus de 20 employés' }
-  ];
+  const handleNumberChange = (value) => {
+    setFormData(prev => ({
+      ...prev,
+      [question.id]: value
+    }));
+    if (errors[question.id]) {
+      setErrors(prev => ({ ...prev, [question.id]: '' }));
+    }
+  };
+
+  const handleSelectChange = (value) => {
+    setFormData(prev => ({
+      ...prev,
+      [question.id]: value
+    }));
+    if (errors[question.id]) {
+      setErrors(prev => ({ ...prev, [question.id]: '' }));
+    }
+  };
+
+  const handleBooleanChange = (value) => {
+    setFormData(prev => ({
+      ...prev,
+      [question.id]: value
+    }));
+  };
+
+  const handleNext = () => {
+    // Validation simple
+    const fieldValue = formData[question.id];
+    
+    if (question.type === 'number') {
+      if (!fieldValue || fieldValue === '') {
+        setErrors(prev => ({ ...prev, [question.id]: 'Ce champ est requis' }));
+        return;
+      }
+      if (isNaN(fieldValue) || fieldValue < 0) {
+        setErrors(prev => ({ ...prev, [question.id]: 'Veuillez entrer un montant valide' }));
+        return;
+      }
+    } else if (question.type === 'select') {
+      if (!fieldValue) {
+        setErrors(prev => ({ ...prev, [question.id]: 'Veuillez sélectionner une option' }));
+        return;
+      }
+    }
+
+    if (currentQuestion < displayQuestions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
+    } else {
+      // Form complete
+      const validation = validateBudgetInputs(formData);
+      if (!validation.isValid) {
+        setErrors(validation.errors);
+        return;
+      }
+
+      localStorage.setItem('budgetData', JSON.stringify({
+        ...formData,
+        totalBudget: validation.totalBudget,
+        isEligible: validation.isEligible
+      }));
+
+      setCompleted(true);
+      setTimeout(() => {
+        navigate('/role');
+      }, 2000);
+    }
+  };
+
+  const handleBack = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(currentQuestion - 1);
+    } else {
+      navigate('/');
+    }
+  };
+
+  const isValid = () => {
+    if (question.type === 'number') {
+      return formData[question.id] && !isNaN(formData[question.id]) && formData[question.id] >= 0;
+    } else if (question.type === 'select') {
+      return formData[question.id] !== '';
+    } else if (question.type === 'boolean') {
+      return true; // Always valid
+    }
+    return false;
+  };
+
+  // Completion screen
+  if (completed) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center px-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center max-w-md"
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 0.6 }}
+            className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6"
+          >
+            <Check className="w-8 h-8 text-blue-600" strokeWidth={3} />
+          </motion.div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-3">
+            Parfait!
+          </h1>
+          <p className="text-lg text-gray-600">
+            Nous analysons vos données...
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white flex flex-col">
       {/* Fixed Header */}
       <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-md z-50 border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="text-2xl font-bold text-blue-600">TelecomAudit</div>
-          <div className="text-sm text-gray-600">Étape 2/4</div>
+          <div className="text-sm text-gray-500">
+            Question {currentQuestion + 1} sur {displayQuestions.length}
+          </div>
         </div>
+        <motion.div
+          className="h-1 bg-blue-600"
+          initial={{ width: '0%' }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.5 }}
+        />
       </nav>
 
-      {/* Progress Bar */}
-      <div className="fixed top-16 w-full h-1 bg-gray-100 z-40">
-        <motion.div
-          initial={{ width: '25%' }}
-          animate={{ width: '50%' }}
-          transition={{ duration: 0.5 }}
-          className="h-full bg-blue-600"
-        />
-      </div>
-
-      <div className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl mx-auto">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-12"
-          >
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Vos dépenses actuelles
-            </h1>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Renseignez vos coûts mensuels pour calculer vos économies potentielles
-            </p>
-          </motion.div>
-
-          {/* Form Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.8 }}
-            className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 md:p-12"
-          >
-            <div className="space-y-12">
-              {/* Budget Inputs */}
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-8">
-                  Budget mensuel
-                </h2>
-                
-                <div className="grid md:grid-cols-2 gap-8">
-                  {budgetItems.map((item, idx) => {
-                    const IconComponent = item.icon;
-                    return (
-                      <motion.div
-                        key={item.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.1, duration: 0.6 }}
-                      >
-                        <div className="flex items-center space-x-2 mb-4">
-                          <div className="p-2 bg-blue-100 rounded-lg">
-                            <IconComponent className="h-5 w-5 text-blue-600" />
-                          </div>
-                          <label className="text-sm font-semibold text-gray-900">
-                            {item.label}
-                            {item.required && <span className="text-red-500 ml-1">*</span>}
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => toggleTooltip(item.id)}
-                            className="text-gray-400 hover:text-gray-600 transition"
-                          >
-                            <HelpCircle className="h-4 w-4" />
-                          </button>
-                        </div>
-
-                        {showTooltips[item.id] && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700"
-                          >
-                            {item.tooltip}
-                          </motion.div>
-                        )}
-
-                        <div className="relative">
-                          <input
-                            type="number"
-                            placeholder={item.placeholder}
-                            className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                              errors[item.id] ? 'border-red-300 bg-red-50' : 'border-gray-300 bg-gray-50 hover:bg-white'
-                            }`}
-                            value={formData[item.id]}
-                            onChange={(e) => handleInputChange(item.id, e.target.value)}
-                          />
-                          <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
-                            €/mois
-                          </span>
-                        </div>
-                        {errors[item.id] && (
-                          <p className="text-red-600 text-sm mt-2">{errors[item.id]}</p>
-                        )}
-                      </motion.div>
-                    );
-                  })}
-                </div>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col items-center justify-center pt-24 pb-8 px-4">
+        <div className="w-full max-w-2xl">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentQuestion}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+            >
+              {/* Question Header */}
+              <div className="text-center mb-12">
+                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
+                  {question.title}
+                </h1>
+                <p className="text-lg text-gray-600">
+                  {question.description}
+                </p>
               </div>
 
-              {/* Phone System */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.6 }}
-              >
-                <div className="flex items-center space-x-2 mb-6">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Phone className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Votre standard téléphonique
-                  </h2>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {phoneSystemOptions.map((option) => (
-                    <motion.label
-                      key={option.value}
-                      whileHover={{ scale: 1.02 }}
-                      className={`flex flex-col p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.phoneSystem === option.value
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300 bg-gray-50 hover:bg-white'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="phoneSystem"
-                        value={option.value}
-                        checked={formData.phoneSystem === option.value}
-                        onChange={(e) => handleInputChange('phoneSystem', e.target.value)}
-                        className="sr-only"
-                      />
-                      <span className="font-semibold text-gray-900">{option.label}</span>
-                      <span className="text-sm text-gray-600 mt-1">{option.desc}</span>
-                    </motion.label>
-                  ))}
-                </div>
-              </motion.div>
-
-              {/* Cybersecurity */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.6 }}
-              >
-                <div className="flex items-center space-x-2 mb-6">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Shield className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Cybersécurité
-                  </h2>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-                  {cybersecurityOptions.map((option) => (
-                    <motion.label
-                      key={option.value}
-                      whileHover={{ scale: 1.02 }}
-                      className={`flex flex-col p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.cybersecurity === option.value
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300 bg-gray-50 hover:bg-white'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="cybersecurity"
-                        value={option.value}
-                        checked={formData.cybersecurity === option.value}
-                        onChange={(e) => handleInputChange('cybersecurity', e.target.value)}
-                        className="sr-only"
-                      />
-                      <span className="font-semibold text-gray-900">{option.label}</span>
-                      <span className="text-sm text-gray-600 mt-1">{option.desc}</span>
-                    </motion.label>
-                  ))}
-                </div>
-
-                {/* Cybersecurity Budget - Conditional */}
-                {formData.cybersecurity === 'yes' && (
+              {/* Question Content */}
+              <div className="mb-12">
+                {question.type === 'number' && (
                   <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
-                    className="mt-6 p-6 bg-blue-50 border border-blue-200 rounded-lg"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
                   >
-                    <div className="flex items-center space-x-2 mb-4">
-                      <Shield className="h-5 w-5 text-blue-600" />
-                      <label className="text-sm font-semibold text-gray-900">
-                        Budget cybersécurité mensuel
-                        <span className="text-red-500 ml-1">*</span>
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => toggleTooltip('cybersecurityBudget')}
-                        className="text-gray-400 hover:text-gray-600 transition"
-                      >
-                        <HelpCircle className="h-4 w-4" />
-                      </button>
-                    </div>
-
-                    {showTooltips.cybersecurityBudget && (
-                      <div className="mb-4 p-3 bg-white border border-blue-200 rounded-lg text-sm text-blue-700">
-                        Inclut: antivirus, firewall, solutions de sécurité réseau, formations sécurité
-                      </div>
-                    )}
-
-                    <div className="relative">
+                    <div className="relative mb-3">
                       <input
                         type="number"
-                        placeholder="Ex: 50"
-                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                          errors.cybersecurityBudget ? 'border-red-300 bg-red-50' : 'border-gray-300 bg-white'
+                        placeholder={question.placeholder}
+                        value={formData[question.id]}
+                        onChange={(e) => handleNumberChange(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && isValid() && handleNext()}
+                        className={`w-full text-center text-5xl md:text-6xl font-light bg-white border-b-2 border-gray-200 focus:border-blue-600 focus:outline-none py-8 transition ${
+                          errors[question.id] ? 'border-red-300' : ''
                         }`}
-                        value={formData.cybersecurityBudget}
-                        onChange={(e) => handleInputChange('cybersecurityBudget', e.target.value)}
+                        autoFocus
                       />
-                      <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
-                        €/mois
-                      </span>
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 text-3xl text-gray-400 font-light">
+                        {question.unit}
+                      </div>
                     </div>
-                    {errors.cybersecurityBudget && (
-                      <p className="text-red-600 text-sm mt-2">{errors.cybersecurityBudget}</p>
+                    {errors[question.id] && (
+                      <p className="text-red-600 text-sm text-center mt-4">
+                        {errors[question.id]}
+                      </p>
                     )}
+                    <p className="text-center text-sm text-gray-500 mt-6">
+                      {question.hint}
+                    </p>
                   </motion.div>
                 )}
-              </motion.div>
 
-              {/* Company Info */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5, duration: 0.6 }}
-              >
-                <div className="flex items-center space-x-2 mb-6">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Building className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Informations entreprise
-                  </h2>
-                </div>
+                {question.type === 'select' && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="space-y-3"
+                  >
+                    {question.options.map((option, idx) => (
+                      <motion.button
+                        key={option.value}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 + idx * 0.1 }}
+                        onClick={() => handleSelectChange(option.value)}
+                        className={`w-full p-6 text-left rounded-xl border-2 transition-all ${
+                          formData[question.id] === option.value
+                            ? 'border-blue-600 bg-blue-50'
+                            : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-gray-900">
+                              {option.label}
+                            </p>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {option.desc}
+                            </p>
+                          </div>
+                          {formData[question.id] === option.value && (
+                            <div className="flex-shrink-0 ml-4">
+                              <Check className="w-6 h-6 text-blue-600" strokeWidth={3} />
+                            </div>
+                          )}
+                        </div>
+                      </motion.button>
+                    ))}
+                  </motion.div>
+                )}
 
-                <div className="grid md:grid-cols-2 gap-8">
-                  {/* Company Size */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-900 mb-4">
-                      Nombre d'employés <span className="text-red-500">*</span>
-                    </label>
-
-                    <select
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                        errors.companySize ? 'border-red-300 bg-red-50' : 'border-gray-300 bg-gray-50 hover:bg-white'
-                      }`}
-                      value={formData.companySize}
-                      onChange={(e) => handleInputChange('companySize', e.target.value)}
-                    >
-                      <option value="">Sélectionnez une tranche</option>
-                      {companySizeOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.companySize && (
-                      <p className="text-red-600 text-sm mt-2">{errors.companySize}</p>
-                    )}
-                  </div>
-
-                  {/* Multi-site */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-900 mb-4">
-                      Structure
-                    </label>
-
-                    <motion.label
-                      whileHover={{ scale: 1.02 }}
-                      className={`flex items-center space-x-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.multiSite
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300 bg-gray-50 hover:bg-white'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.multiSite}
-                        onChange={(e) => handleInputChange('multiSite', e.target.checked)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <span className="font-semibold text-gray-900">
-                        Entreprise multi-sites
-                      </span>
-                    </motion.label>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-
-            {/* Navigation Buttons */}
-            <div className="flex justify-between mt-12 pt-8 border-t border-gray-200">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleBack}
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 font-semibold transition"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span>Retour</span>
-              </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleSubmit}
-                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-semibold shadow-lg transition"
-              >
-                <span>Continuer</span>
-                <ArrowRight className="w-5 h-5" />
-              </motion.button>
-            </div>
-          </motion.div>
-
-          {/* Info Box */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.8 }}
-            className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center text-sm text-blue-700"
-          >
-            💡 Vos données sont sécurisées et conformes au RGPD
-          </motion.div>
+                {question.type === 'boolean' && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="space-y-3"
+                  >
+                    {[
+                      { value: true, label: 'Oui', desc: 'Nous avons plusieurs sites' },
+                      { value: false, label: 'Non', desc: 'Un seul site' }
+                    ].map((option, idx) => (
+                      <motion.button
+                        key={String(option.value)}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 + idx * 0.1 }}
+                        onClick={() => {
+                          handleBooleanChange(option.value);
+                          // Auto-advance on boolean selection
+                          setTimeout(() => handleNext(), 300);
+                        }}
+                        className={`w-full p-6 text-left rounded-xl border-2 transition-all ${
+                          formData[question.id] === option.value
+                            ? 'border-blue-600 bg-blue-50'
+                            : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-gray-900">
+                              {option.label}
+                            </p>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {option.desc}
+                            </p>
+                          </div>
+                          {formData[question.id] === option.value && (
+                            <div className="flex-shrink-0 ml-4">
+                              <Check className="w-6 h-6 text-blue-600" strokeWidth={3} />
+                            </div>
+                          )}
+                        </div>
+                      </motion.button>
+                    ))}
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
+
+      {/* Footer - Buttons */}
+      <motion.div
+        className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 sm:p-6"
+        initial={{ y: 100 }}
+        animate={{ y: 0 }}
+      >
+        <div className="max-w-2xl mx-auto flex items-center justify-between">
+          <motion.button
+            onClick={handleBack}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 font-semibold transition"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="hidden sm:inline">Retour</span>
+          </motion.button>
+
+          <motion.button
+            onClick={handleNext}
+            disabled={!isValid()}
+            whileHover={isValid() ? { scale: 1.05 } : {}}
+            whileTap={isValid() ? { scale: 0.95 } : {}}
+            className={`flex items-center space-x-2 px-8 py-3 rounded-lg font-semibold transition ${
+              isValid()
+                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            <span>{currentQuestion === displayQuestions.length - 1 ? 'Terminer' : 'Suivant'}</span>
+            <ArrowRight className="w-5 h-5" />
+          </motion.button>
+        </div>
+      </motion.div>
+
+      {/* Safety margin for mobile */}
+      <div className="h-24 sm:h-20" />
     </div>
   );
 };
