@@ -56,17 +56,6 @@ const BudgetForm = () => {
       hint: 'Montant approximatif'
     },
     {
-      id: 'phoneSystem',
-      type: 'select',
-      title: 'Quel est votre standard téléphonique?',
-      description: 'Cela nous aide à calculer vos économies',
-      options: [
-        { value: 'rental', label: 'En location', desc: 'Loué chez un opérateur' },
-        { value: 'purchase', label: 'Acheté', desc: 'Équipement en propriété' },
-        { value: 'none', label: 'Aucun', desc: 'Pas de standard' }
-      ]
-    },
-    {
       id: 'cybersecurity',
       type: 'select',
       title: 'Avez-vous une solution cybersécurité?',
@@ -104,7 +93,7 @@ const BudgetForm = () => {
       id: 'multiSite',
       type: 'boolean',
       title: 'Avez-vous plusieurs sites ou bureaux?',
-      description: 'Cela affecte le calcul de vos économies'
+      description: ''
     }
   ];
 
@@ -173,13 +162,15 @@ const BudgetForm = () => {
       setErrors(prev => ({ ...prev, [question.id]: '' }));
     }
     
-    // Auto-advance si valide après 800ms
+    // Auto-advance si valide après 1400ms
     if (value && !isNaN(value) && value >= 0) {
       setTimeout(() => {
         if (currentQuestion < displayQuestions.length - 1) {
           setCurrentQuestion(currentQuestion + 1);
+        } else {
+          handleSubmit();
         }
-      }, 800);
+      }, 1400);
     }
   };
 
@@ -197,8 +188,10 @@ const BudgetForm = () => {
       setTimeout(() => {
         if (currentQuestion < displayQuestions.length - 1) {
           setCurrentQuestion(currentQuestion + 1);
+        } else {
+          handleSubmit();
         }
-      }, 800);
+      }, 1400);
     }
   };
 
@@ -215,8 +208,10 @@ const BudgetForm = () => {
     setTimeout(() => {
       if (currentQuestion < displayQuestions.length - 1) {
         setCurrentQuestion(currentQuestion + 1);
+      } else {
+        handleSubmit();
       }
-    }, 600);
+    }, 1400);
   };
 
   const handleBooleanChange = (value) => {
@@ -229,8 +224,10 @@ const BudgetForm = () => {
     setTimeout(() => {
       if (currentQuestion < displayQuestions.length - 1) {
         setCurrentQuestion(currentQuestion + 1);
+      } else {
+        handleSubmit();
       }
-    }, 600);
+    }, 1400);
   };
 
   const handleCheckboxChange = (checked) => {
@@ -250,7 +247,7 @@ const BudgetForm = () => {
         } else {
           handleSubmit();
         }
-      }, 600);
+      }, 1400);
     }
   };
 
