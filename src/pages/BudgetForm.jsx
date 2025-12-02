@@ -14,6 +14,8 @@ const BudgetForm = () => {
     cybersecurity: '',
     cybersecurityBudget: '',
     companySize: '',
+    role: '',
+    roleOther: false,
     multiSite: false
   });
   const [errors, setErrors] = useState({});
@@ -73,6 +75,17 @@ const BudgetForm = () => {
       ]
     },
     {
+      id: 'role',
+      type: 'select',
+      title: 'Quelle est votre fonction?',
+      description: 'Cela nous aide à adapter notre approche',
+      options: [
+        { value: 'manager', label: 'Gérant', desc: 'PDG, Directeur Général' },
+        { value: 'admin', label: 'Directeur Administratif', desc: 'DAF, Direction Administrative' },
+        { value: 'other', label: 'Autre fonction', desc: 'Autre responsabilité' }
+      ]
+    },
+    {
       id: 'multiSite',
       type: 'boolean',
       title: 'Avez-vous plusieurs sites ou bureaux?',
@@ -81,9 +94,9 @@ const BudgetForm = () => {
   ];
 
   // Si cybersecurity === 'yes', ajouter la question du budget cybersécurité
-  const displayQuestions = formData.cybersecurity === 'yes' && currentQuestion === 4
+  const displayQuestions = formData.cybersecurity === 'yes' && currentQuestion === 3
     ? [
-        ...questions.slice(0, 4),
+        ...questions.slice(0, 3),
         {
           id: 'cybersecurityBudget',
           type: 'number',
@@ -93,12 +106,30 @@ const BudgetForm = () => {
           unit: '€/mois',
           hint: 'Montant approximatif'
         },
-        ...questions.slice(4)
+        ...questions.slice(3)
       ]
     : questions;
 
-  const question = displayQuestions[currentQuestion];
-  const progress = ((currentQuestion + 1) / displayQuestions.length) * 100;
+  // Si role === 'other', ajouter la question de confirmation
+  const displayQuestionsWithRole = formData.role === 'other'
+    ? displayQuestions.map((q, idx) => {
+        if (q.id === 'role') {
+          return [
+            q,
+            {
+              id: 'roleOther',
+              type: 'boolean',
+              title: 'Je certifie être décisionnaire dans mon entreprise',
+              description: 'Vous confirmez avoir le pouvoir de décision concernant les contrats télécom'
+            }
+          ];
+        }
+        return q;
+      }).flat()
+    : displayQuestions;
+
+  const question = displayQuestionsWithRole[currentQuestion];
+  const progress = ((currentQuestion + 1) / displayQuestionsWithRole.length) * 100;
 
   const handleNumberChange = (value) => {
     setFormData(prev => ({
@@ -147,7 +178,7 @@ const BudgetForm = () => {
       }
     }
 
-    if (currentQuestion < displayQuestions.length - 1) {
+    if (currentQuestion < displayQuestionsWithRole.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
       // Form complete
@@ -223,7 +254,7 @@ const BudgetForm = () => {
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="text-2xl font-bold text-blue-600">TelecomAudit</div>
           <div className="text-sm text-gray-500">
-            Question {currentQuestion + 1} sur {displayQuestions.length}
+            Question {currentQuestion + 1} sur {displayQuestionsWithRole.length}
           </div>
         </div>
         <motion.div
@@ -270,12 +301,22 @@ const BudgetForm = () => {
                         value={formData[question.id]}
                         onChange={(e) => handleNumberChange(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && isValid() && handleNext()}
-                        className={`w-full text-center text-5xl md:text-6xl font-light bg-white border-b-2 border-gray-200 focus:border-blue-600 focus:outline-none py-8 transition ${
+                        className={`w-full text-center text-5xl md:text-6xl font-light bg-white border-b-2 border-gray-200 focus:border-blue-600 focus:outline-none py-8 transition pr-24 ${
                           errors[question.id] ? 'border-red-300' : ''
                         }`}
+                        style={{
+                          appearance: 'textfield'
+                        }}
                         autoFocus
                       />
-                      <div className="absolute right-0 top-1/2 -translate-y-1/2 text-3xl text-gray-400 font-light">
+                      <style>{`
+                        input[type='number']::-webkit-outer-spin-button,
+                        input[type='number']::-webkit-inner-spin-button {
+                          -webkit-appearance: none;
+                          margin: 0;
+                        }
+                      `}</style>
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 text-3xl text-gray-400 font-light pointer-events-none">
                         {question.unit}
                       </div>
                     </div>
@@ -337,10 +378,17 @@ const BudgetForm = () => {
                     transition={{ delay: 0.2 }}
                     className="space-y-3"
                   >
-                    {[
-                      { value: true, label: 'Oui', desc: 'Nous avons plusieurs sites' },
-                      { value: false, label: 'Non', desc: 'Un seul site' }
-                    ].map((option, idx) => (
+                    {question.id === 'multiSite' ? (
+                      [
+                        { value: true, label: 'Oui', desc: 'Nous avons plusieurs sites' },
+                        { value: false, label: 'Non', desc: 'Un seul site' }
+                      ]
+                    ) : (
+                      [
+                        { value: true, label: 'Je confirme', desc: 'Je suis décisionnaire' },
+                        { value: false, label: 'Retour', desc: 'Je dois vérifier' }
+                      ]
+                    )}.map((option, idx) => (
                       <motion.button
                         key={String(option.value)}
                         initial={{ opacity: 0, y: 10 }}
@@ -410,7 +458,7 @@ const BudgetForm = () => {
                 : 'bg-gray-200 text-gray-500 cursor-not-allowed'
             }`}
           >
-            <span>{currentQuestion === displayQuestions.length - 1 ? 'Terminer' : 'Suivant'}</span>
+            <span>{currentQuestion === displayQuestionsWithRole.length - 1 ? 'Terminer' : 'Suivant'}</span>
             <ArrowRight className="w-5 h-5" />
           </motion.button>
         </div>
