@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ArrowLeft, Check } from 'lucide-react';
+import { ArrowLeft, Check } from 'lucide-react';
 import { validateBudgetInputs } from '../utils/calculations';
 
 const BudgetForm = () => {
@@ -30,22 +30,18 @@ const BudgetForm = () => {
       title: 'Quel est votre opérateur actuel?',
       description: 'Cela nous aide à analyser vos alternatives',
       options: [
-        { value: 'orange', label: 'Orange', desc: 'Le leader du marché' },
-        { value: 'bouygues', label: 'Bouygues Telecom', desc: 'Opérateur alternatif' },
-        { value: 'free', label: 'Free', desc: 'L\'innovateur' },
-        { value: 'sfr', label: 'SFR', desc: 'Opérateur généraliste' },
-        { value: 'completel', label: 'Completel', desc: 'Spécialiste PME' },
-        { value: 'partiel', label: 'Partiel', desc: 'Opérateur local' },
-        { value: 'sct', label: 'SCT', desc: 'Opérateur régional' },
-        { value: 'covage', label: 'Covage', desc: 'Connectivité' },
-        { value: 'other', label: 'Autre opérateur', desc: 'À préciser' }
+        { value: 'orange', label: 'Orange', desc: '' },
+        { value: 'sfr', label: 'SFR', desc: '' },
+        { value: 'bouygues', label: 'Bouygues Telecom', desc: '' },
+        { value: 'free', label: 'Free', desc: '' },
+        { value: 'other', label: 'Autre opérateur', desc: '' }
       ]
     },
     {
       id: 'fixedBudget',
       type: 'number',
-      title: 'Quel est votre budget téléphonie fixe mensuel?',
-      description: 'Lignes fixes, standard, communications nationales/internationales',
+      title: 'À combien s\'élève la charge mensuelle de votre téléphonie fixe, y compris votre standard ?',
+      description: '',
       placeholder: '150',
       unit: '€/mois',
       hint: 'Montant approximatif'
@@ -53,8 +49,8 @@ const BudgetForm = () => {
     {
       id: 'internetBudget',
       type: 'number',
-      title: 'Quel est votre budget internet mensuel?',
-      description: 'Connexions internet, liaisons spécialisées, backup 4G/5G',
+      title: 'Quel montant dépense votre société chaque mois pour Internet ?',
+      description: '',
       placeholder: '80',
       unit: '€/mois',
       hint: 'Montant approximatif'
@@ -176,6 +172,15 @@ const BudgetForm = () => {
     if (errors[question.id]) {
       setErrors(prev => ({ ...prev, [question.id]: '' }));
     }
+    
+    // Auto-advance si valide après 800ms
+    if (value && !isNaN(value) && value >= 0) {
+      setTimeout(() => {
+        if (currentQuestion < displayQuestions.length - 1) {
+          setCurrentQuestion(currentQuestion + 1);
+        }
+      }, 800);
+    }
   };
 
   const handleTextChange = (value) => {
@@ -185,6 +190,15 @@ const BudgetForm = () => {
     }));
     if (errors[question.id]) {
       setErrors(prev => ({ ...prev, [question.id]: '' }));
+    }
+    
+    // Auto-advance si texte saisi (min 2 caractères)
+    if (value.trim().length >= 2) {
+      setTimeout(() => {
+        if (currentQuestion < displayQuestions.length - 1) {
+          setCurrentQuestion(currentQuestion + 1);
+        }
+      }, 800);
     }
   };
 
@@ -196,6 +210,13 @@ const BudgetForm = () => {
     if (errors[question.id]) {
       setErrors(prev => ({ ...prev, [question.id]: '' }));
     }
+    
+    // Auto-advance après sélection
+    setTimeout(() => {
+      if (currentQuestion < displayQuestions.length - 1) {
+        setCurrentQuestion(currentQuestion + 1);
+      }
+    }, 600);
   };
 
   const handleBooleanChange = (value) => {
@@ -203,6 +224,13 @@ const BudgetForm = () => {
       ...prev,
       [question.id]: value
     }));
+    
+    // Auto-advance après sélection
+    setTimeout(() => {
+      if (currentQuestion < displayQuestions.length - 1) {
+        setCurrentQuestion(currentQuestion + 1);
+      }
+    }, 600);
   };
 
   const handleCheckboxChange = (checked) => {
@@ -213,59 +241,36 @@ const BudgetForm = () => {
     if (errors[question.id]) {
       setErrors(prev => ({ ...prev, [question.id]: '' }));
     }
+    
+    // Auto-advance si coché
+    if (checked) {
+      setTimeout(() => {
+        if (currentQuestion < displayQuestions.length - 1) {
+          setCurrentQuestion(currentQuestion + 1);
+        } else {
+          handleSubmit();
+        }
+      }, 600);
+    }
   };
 
-  const handleNext = () => {
-    // Validation simple
-    const fieldValue = formData[question.id];
-    
-    if (question.type === 'number') {
-      if (!fieldValue || fieldValue === '') {
-        setErrors(prev => ({ ...prev, [question.id]: 'Ce champ est requis' }));
-        return;
-      }
-      if (isNaN(fieldValue) || fieldValue < 0) {
-        setErrors(prev => ({ ...prev, [question.id]: 'Veuillez entrer un montant valide' }));
-        return;
-      }
-    } else if (question.type === 'text') {
-      if (!fieldValue || fieldValue.trim() === '') {
-        setErrors(prev => ({ ...prev, [question.id]: 'Ce champ est requis' }));
-        return;
-      }
-    } else if (question.type === 'select') {
-      if (!fieldValue) {
-        setErrors(prev => ({ ...prev, [question.id]: 'Veuillez sélectionner une option' }));
-        return;
-      }
-    } else if (question.type === 'checkbox') {
-      if (!fieldValue) {
-        setErrors(prev => ({ ...prev, [question.id]: 'Veuillez confirmer pour continuer' }));
-        return;
-      }
+  const handleSubmit = () => {
+    const validation = validateBudgetInputs(formData);
+    if (!validation.isValid) {
+      setErrors(validation.errors);
+      return;
     }
 
-    if (currentQuestion < displayQuestions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
-    } else {
-      // Form complete
-      const validation = validateBudgetInputs(formData);
-      if (!validation.isValid) {
-        setErrors(validation.errors);
-        return;
-      }
+    localStorage.setItem('budgetData', JSON.stringify({
+      ...formData,
+      totalBudget: validation.totalBudget,
+      isEligible: validation.isEligible
+    }));
 
-      localStorage.setItem('budgetData', JSON.stringify({
-        ...formData,
-        totalBudget: validation.totalBudget,
-        isEligible: validation.isEligible
-      }));
-
-      setCompleted(true);
-      setTimeout(() => {
-        navigate('/role');
-      }, 2000);
-    }
+    setCompleted(true);
+    setTimeout(() => {
+      navigate('/role');
+    }, 2000);
   };
 
   const handleBack = () => {
@@ -274,21 +279,6 @@ const BudgetForm = () => {
     } else {
       navigate('/');
     }
-  };
-
-  const isValid = () => {
-    if (question.type === 'number') {
-      return formData[question.id] && !isNaN(formData[question.id]) && formData[question.id] >= 0;
-    } else if (question.type === 'text') {
-      return formData[question.id] && formData[question.id].trim() !== '';
-    } else if (question.type === 'select') {
-      return formData[question.id] !== '';
-    } else if (question.type === 'checkbox') {
-      return formData[question.id] === true;
-    } else if (question.type === 'boolean') {
-      return true;
-    }
-    return false;
   };
 
   // Completion screen
@@ -352,9 +342,11 @@ const BudgetForm = () => {
                 <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
                   {question.title}
                 </h1>
-                <p className="text-lg text-gray-600">
-                  {question.description}
-                </p>
+                {question.description && (
+                  <p className="text-lg text-gray-600">
+                    {question.description}
+                  </p>
+                )}
               </div>
 
               {/* Question Content */}
@@ -371,7 +363,6 @@ const BudgetForm = () => {
                         placeholder={question.placeholder}
                         value={formData[question.id]}
                         onChange={(e) => handleNumberChange(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && isValid() && handleNext()}
                         className={`w-full text-center text-5xl md:text-6xl font-light bg-white border-b-2 border-gray-200 focus:border-blue-600 focus:outline-none py-8 transition pr-24 ${
                           errors[question.id] ? 'border-red-300' : ''
                         }`}
@@ -413,7 +404,6 @@ const BudgetForm = () => {
                       placeholder={question.placeholder}
                       value={formData[question.id]}
                       onChange={(e) => handleTextChange(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && isValid() && handleNext()}
                       className={`w-full px-4 py-4 border-b-2 border-gray-200 focus:border-blue-600 focus:outline-none text-xl transition ${
                         errors[question.id] ? 'border-red-300' : ''
                       }`}
@@ -455,9 +445,11 @@ const BudgetForm = () => {
                             <p className="font-semibold text-gray-900">
                               {option.label}
                             </p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {option.desc}
-                            </p>
+                            {option.desc && (
+                              <p className="text-sm text-gray-600 mt-1">
+                                {option.desc}
+                              </p>
+                            )}
                           </div>
                           {formData[question.id] === option.value && (
                             <div className="flex-shrink-0 ml-4">
@@ -515,10 +507,7 @@ const BudgetForm = () => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 + idx * 0.1 }}
-                        onClick={() => {
-                          handleBooleanChange(option.value);
-                          setTimeout(() => handleNext(), 300);
-                        }}
+                        onClick={() => handleBooleanChange(option.value)}
                         className={`w-full p-6 text-left rounded-xl border-2 transition-all ${
                           formData[question.id] === option.value
                             ? 'border-blue-600 bg-blue-50'
@@ -556,7 +545,7 @@ const BudgetForm = () => {
         initial={{ y: 100 }}
         animate={{ y: 0 }}
       >
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
+        <div className="max-w-2xl mx-auto flex items-center justify-start">
           <motion.button
             onClick={handleBack}
             whileHover={{ scale: 1.05 }}
@@ -565,21 +554,6 @@ const BudgetForm = () => {
           >
             <ArrowLeft className="w-5 h-5" />
             <span className="hidden sm:inline">Retour</span>
-          </motion.button>
-
-          <motion.button
-            onClick={handleNext}
-            disabled={!isValid()}
-            whileHover={isValid() ? { scale: 1.05 } : {}}
-            whileTap={isValid() ? { scale: 0.95 } : {}}
-            className={`flex items-center space-x-2 px-8 py-3 rounded-lg font-semibold transition ${
-              isValid()
-                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
-                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            <span>{currentQuestion === displayQuestions.length - 1 ? 'Terminer' : 'Suivant'}</span>
-            <ArrowRight className="w-5 h-5" />
           </motion.button>
         </div>
       </motion.div>
