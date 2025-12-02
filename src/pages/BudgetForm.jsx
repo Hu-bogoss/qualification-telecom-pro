@@ -8,6 +8,8 @@ const BudgetForm = () => {
   const navigate = useNavigate();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [formData, setFormData] = useState({
+    operator: '',
+    operatorOther: '',
     fixedBudget: '',
     internetBudget: '',
     phoneSystem: '',
@@ -15,13 +17,30 @@ const BudgetForm = () => {
     cybersecurityBudget: '',
     companySize: '',
     role: '',
-    roleOther: false,
+    isDecisionMaker: false,
     multiSite: false
   });
   const [errors, setErrors] = useState({});
   const [completed, setCompleted] = useState(false);
 
-  const questions = [
+  const baseQuestions = [
+    {
+      id: 'operator',
+      type: 'select',
+      title: 'Quel est votre opérateur actuel?',
+      description: 'Cela nous aide à analyser vos alternatives',
+      options: [
+        { value: 'orange', label: 'Orange', desc: 'Le leader du marché' },
+        { value: 'bouygues', label: 'Bouygues Telecom', desc: 'Opérateur alternatif' },
+        { value: 'free', label: 'Free', desc: 'L\'innovateur' },
+        { value: 'sfr', label: 'SFR', desc: 'Opérateur généraliste' },
+        { value: 'completel', label: 'Completel', desc: 'Spécialiste PME' },
+        { value: 'partiel', label: 'Partiel', desc: 'Opérateur local' },
+        { value: 'sct', label: 'SCT', desc: 'Opérateur régional' },
+        { value: 'covage', label: 'Covage', desc: 'Connectivité' },
+        { value: 'other', label: 'Autre opérateur', desc: 'À préciser' }
+      ]
+    },
     {
       id: 'fixedBudget',
       type: 'number',
@@ -93,11 +112,30 @@ const BudgetForm = () => {
     }
   ];
 
-  // Si cybersecurity === 'yes', ajouter la question du budget cybersécurité
-  const displayQuestions = formData.cybersecurity === 'yes' && currentQuestion === 3
-    ? [
-        ...questions.slice(0, 3),
-        {
+  // Construire la liste des questions à afficher dynamiquement
+  const buildDisplayQuestions = () => {
+    let questions = [...baseQuestions];
+
+    // Si operator === 'other', ajouter la question après operator
+    if (formData.operator === 'other') {
+      const operatorIndex = questions.findIndex(q => q.id === 'operator');
+      if (operatorIndex !== -1) {
+        questions.splice(operatorIndex + 1, 0, {
+          id: 'operatorOther',
+          type: 'text',
+          title: 'Quel est votre opérateur?',
+          description: 'Veuillez préciser le nom de votre opérateur',
+          placeholder: 'Ex: Télécom X, Opérateur Local...',
+          hint: 'Nom de l\'opérateur'
+        });
+      }
+    }
+
+    // Si cybersecurity === 'yes', ajouter la question du budget cybersécurité après
+    if (formData.cybersecurity === 'yes') {
+      const cyberIndex = questions.findIndex(q => q.id === 'cybersecurity');
+      if (cyberIndex !== -1) {
+        questions.splice(cyberIndex + 1, 0, {
           id: 'cybersecurityBudget',
           type: 'number',
           title: 'Quel est votre budget cybersécurité mensuel?',
@@ -105,33 +143,42 @@ const BudgetForm = () => {
           placeholder: '50',
           unit: '€/mois',
           hint: 'Montant approximatif'
-        },
-        ...questions.slice(3)
-      ]
-    : questions;
+        });
+      }
+    }
 
-  // Si role === 'other', ajouter la question de confirmation
-  const displayQuestionsWithRole = formData.role === 'other'
-    ? displayQuestions.map((q, idx) => {
-        if (q.id === 'role') {
-          return [
-            q,
-            {
-              id: 'roleOther',
-              type: 'boolean',
-              title: 'Je certifie être décisionnaire dans mon entreprise',
-              description: 'Vous confirmez avoir le pouvoir de décision concernant les contrats télécom'
-            }
-          ];
-        }
-        return q;
-      }).flat()
-    : displayQuestions;
+    // Si role === 'other', ajouter la question de vérification après
+    if (formData.role === 'other') {
+      const roleIndex = questions.findIndex(q => q.id === 'role');
+      if (roleIndex !== -1) {
+        questions.splice(roleIndex + 1, 0, {
+          id: 'isDecisionMaker',
+          type: 'checkbox',
+          title: 'Confirmation',
+          description: 'Avant de continuer, veuillez confirmer:',
+          label: 'Je certifie être décisionnaire dans mon entreprise'
+        });
+      }
+    }
 
-  const question = displayQuestionsWithRole[currentQuestion];
-  const progress = ((currentQuestion + 1) / displayQuestionsWithRole.length) * 100;
+    return questions;
+  };
+
+  const displayQuestions = buildDisplayQuestions();
+  const question = displayQuestions[currentQuestion];
+  const progress = ((currentQuestion + 1) / displayQuestions.length) * 100;
 
   const handleNumberChange = (value) => {
+    setFormData(prev => ({
+      ...prev,
+      [question.id]: value
+    }));
+    if (errors[question.id]) {
+      setErrors(prev => ({ ...prev, [question.id]: '' }));
+    }
+  };
+
+  const handleTextChange = (value) => {
     setFormData(prev => ({
       ...prev,
       [question.id]: value
@@ -158,6 +205,16 @@ const BudgetForm = () => {
     }));
   };
 
+  const handleCheckboxChange = (checked) => {
+    setFormData(prev => ({
+      ...prev,
+      [question.id]: checked
+    }));
+    if (errors[question.id]) {
+      setErrors(prev => ({ ...prev, [question.id]: '' }));
+    }
+  };
+
   const handleNext = () => {
     // Validation simple
     const fieldValue = formData[question.id];
@@ -171,14 +228,24 @@ const BudgetForm = () => {
         setErrors(prev => ({ ...prev, [question.id]: 'Veuillez entrer un montant valide' }));
         return;
       }
+    } else if (question.type === 'text') {
+      if (!fieldValue || fieldValue.trim() === '') {
+        setErrors(prev => ({ ...prev, [question.id]: 'Ce champ est requis' }));
+        return;
+      }
     } else if (question.type === 'select') {
       if (!fieldValue) {
         setErrors(prev => ({ ...prev, [question.id]: 'Veuillez sélectionner une option' }));
         return;
       }
+    } else if (question.type === 'checkbox') {
+      if (!fieldValue) {
+        setErrors(prev => ({ ...prev, [question.id]: 'Veuillez confirmer pour continuer' }));
+        return;
+      }
     }
 
-    if (currentQuestion < displayQuestionsWithRole.length - 1) {
+    if (currentQuestion < displayQuestions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
       // Form complete
@@ -212,10 +279,14 @@ const BudgetForm = () => {
   const isValid = () => {
     if (question.type === 'number') {
       return formData[question.id] && !isNaN(formData[question.id]) && formData[question.id] >= 0;
+    } else if (question.type === 'text') {
+      return formData[question.id] && formData[question.id].trim() !== '';
     } else if (question.type === 'select') {
       return formData[question.id] !== '';
+    } else if (question.type === 'checkbox') {
+      return formData[question.id] === true;
     } else if (question.type === 'boolean') {
-      return true; // Always valid
+      return true;
     }
     return false;
   };
@@ -254,7 +325,7 @@ const BudgetForm = () => {
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="text-2xl font-bold text-blue-600">TelecomAudit</div>
           <div className="text-sm text-gray-500">
-            Question {currentQuestion + 1} sur {displayQuestionsWithRole.length}
+            Question {currentQuestion + 1} sur {displayQuestions.length}
           </div>
         </div>
         <motion.div
@@ -331,6 +402,34 @@ const BudgetForm = () => {
                   </motion.div>
                 )}
 
+                {question.type === 'text' && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <input
+                      type="text"
+                      placeholder={question.placeholder}
+                      value={formData[question.id]}
+                      onChange={(e) => handleTextChange(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && isValid() && handleNext()}
+                      className={`w-full px-4 py-4 border-b-2 border-gray-200 focus:border-blue-600 focus:outline-none text-xl transition ${
+                        errors[question.id] ? 'border-red-300' : ''
+                      }`}
+                      autoFocus
+                    />
+                    {errors[question.id] && (
+                      <p className="text-red-600 text-sm mt-4">
+                        {errors[question.id]}
+                      </p>
+                    )}
+                    <p className="text-sm text-gray-500 mt-6">
+                      {question.hint}
+                    </p>
+                  </motion.div>
+                )}
+
                 {question.type === 'select' && (
                   <motion.div
                     initial={{ opacity: 0 }}
@@ -371,6 +470,35 @@ const BudgetForm = () => {
                   </motion.div>
                 )}
 
+                {question.type === 'checkbox' && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <label className={`flex items-start space-x-4 p-6 rounded-xl border-2 cursor-pointer transition-all ${
+                      formData[question.id]
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-white'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={formData[question.id]}
+                        onChange={(e) => handleCheckboxChange(e.target.checked)}
+                        className="mt-1 h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                      />
+                      <span className="text-lg font-semibold text-gray-900">
+                        {question.label}
+                      </span>
+                    </label>
+                    {errors[question.id] && (
+                      <p className="text-red-600 text-sm mt-4">
+                        {errors[question.id]}
+                      </p>
+                    )}
+                  </motion.div>
+                )}
+
                 {question.type === 'boolean' && (
                   <motion.div
                     initial={{ opacity: 0 }}
@@ -378,17 +506,10 @@ const BudgetForm = () => {
                     transition={{ delay: 0.2 }}
                     className="space-y-3"
                   >
-                    {question.id === 'multiSite' ? (
-                      [
-                        { value: true, label: 'Oui', desc: 'Nous avons plusieurs sites' },
-                        { value: false, label: 'Non', desc: 'Un seul site' }
-                      ]
-                    ) : (
-                      [
-                        { value: true, label: 'Je confirme', desc: 'Je suis décisionnaire' },
-                        { value: false, label: 'Retour', desc: 'Je dois vérifier' }
-                      ]
-                    )}.map((option, idx) => (
+                    {[
+                      { value: true, label: 'Oui', desc: 'Nous avons plusieurs sites' },
+                      { value: false, label: 'Non', desc: 'Un seul site' }
+                    ].map((option, idx) => (
                       <motion.button
                         key={String(option.value)}
                         initial={{ opacity: 0, y: 10 }}
@@ -396,7 +517,6 @@ const BudgetForm = () => {
                         transition={{ delay: 0.2 + idx * 0.1 }}
                         onClick={() => {
                           handleBooleanChange(option.value);
-                          // Auto-advance on boolean selection
                           setTimeout(() => handleNext(), 300);
                         }}
                         className={`w-full p-6 text-left rounded-xl border-2 transition-all ${
@@ -458,7 +578,7 @@ const BudgetForm = () => {
                 : 'bg-gray-200 text-gray-500 cursor-not-allowed'
             }`}
           >
-            <span>{currentQuestion === displayQuestionsWithRole.length - 1 ? 'Terminer' : 'Suivant'}</span>
+            <span>{currentQuestion === displayQuestions.length - 1 ? 'Terminer' : 'Suivant'}</span>
             <ArrowRight className="w-5 h-5" />
           </motion.button>
         </div>
