@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, CheckCircle, Shield, Zap } from 'lucide-react';
+import Card from '../components/Card';
 
 const WelcomeConsent = () => {
   const navigate = useNavigate();
@@ -10,7 +11,18 @@ const WelcomeConsent = () => {
     professional: false
   });
   const [errors, setErrors] = useState({});
-  const formSectionRef = useRef(null);
+  const timerInitializedRef = useRef(false);
+
+  // Countdown timer - Only initialize ONCE
+  useEffect(() => {
+    if (timerInitializedRef.current) return;
+    timerInitializedRef.current = true;
+
+    const timer = setInterval(() => {
+      // Timer logic if needed
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleConsentChange = (type) => {
     setConsents(prev => ({
@@ -49,10 +61,12 @@ const WelcomeConsent = () => {
 
   // Operators data
   const operators = [
-    { name: 'Orange', logo: '🟠' },
-    { name: 'SFR', logo: '🔴' },
-    { name: 'Bouygues', logo: '🔵' },
-    { name: 'Free', logo: '⚫' },
+    { name: 'Orange', logo: '🟠', color: '#FF6600' },
+    { name: 'SFR', logo: '🔴', color: '#FF0000' },
+    { name: 'Bouygues', logo: '🔵', color: '#0066FF' },
+    { name: 'Free', logo: '⚫', color: '#000000' },
+    { name: 'Crosscall', logo: '🟢', color: '#00AA00' },
+    { name: 'Autres', logo: '⭐', color: '#666666' }
   ];
 
   const steps = [
@@ -117,7 +131,7 @@ const WelcomeConsent = () => {
             <p className="text-sm text-gray-500 mb-6 uppercase tracking-wide">
               Nous travaillons avec tous les opérateurs
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mb-12">
               {operators.map((op, idx) => (
                 <motion.div
                   key={idx}
@@ -131,7 +145,7 @@ const WelcomeConsent = () => {
             </div>
           </motion.div>
 
-          {/* Main CTA - BUTTON TO START */}
+          {/* Main CTA */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -141,10 +155,7 @@ const WelcomeConsent = () => {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => {
-                console.log('Button clicked - navigating to /budget');
-                navigate('/budget');
-              }}
+              onClick={() => document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' })}
               className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg transition-all inline-flex items-center space-x-2"
             >
               <span>Commencer l'analyse</span>
@@ -275,7 +286,7 @@ const WelcomeConsent = () => {
       </section>
 
       {/* ===== FORM SECTION ===== */}
-      <section id="form-section" ref={formSectionRef} className="py-20 px-4 sm:px-6 lg:px-8">
+      <section id="form-section" className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -292,7 +303,7 @@ const WelcomeConsent = () => {
               </p>
             </div>
 
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
+            <Card className="p-8 border border-gray-200">
               <div className="space-y-6">
                 {/* Contact Consent */}
                 <div className="border border-gray-200 rounded-lg p-5 hover:border-blue-300 transition">
@@ -363,7 +374,7 @@ const WelcomeConsent = () => {
                   Gratuit • Sans engagement • Analyse en 2 minutes
                 </p>
               </div>
-            </div>
+            </Card>
           </motion.div>
         </div>
       </section>
