@@ -94,13 +94,13 @@ const ResultsPage = () => {
         const savings = calculateSavings(data);
         setSavingsData(savings);
 
-        // Sequence d'animation sur 8 secondes
+        // Sequence d'animation sur 12 secondes
         const timings = [
-          { delay: 800, step: 1 },    // Analyse de votre profil en cours...
-          { delay: 2500, step: 2 },   // Analyse des offres correspondantes...
-          { delay: 4500, step: 3 },   // Offre trouvée, calcul des économies...
-          { delay: 6000, step: 4 },   // Vérification des résultats...
-          { delay: 8000, step: 5 }    // Afficher les résultats
+          { delay: 1000, step: 1 },    // 1.0s  - Analyse de votre profil en cours...
+          { delay: 3500, step: 2 },    // 3.5s  - Analyse des offres correspondantes...
+          { delay: 6500, step: 3 },    // 6.5s  - Offre trouvée / Vérification position...
+          { delay: 9000, step: 4 },    // 9.0s  - Vérification / Analyse complète...
+          { delay: 12000, step: 5 }    // 12.0s - Afficher les résultats
         ];
 
         timings.forEach(({ delay, step }) => {
@@ -184,7 +184,7 @@ const ResultsPage = () => {
             )}
           </motion.div>
 
-          {/* Step 3 */}
+          {/* Step 3 - DYNAMIQUE selon offre trouvée */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: loadingStep >= 3 ? 1 : 0, y: loadingStep >= 3 ? 0 : 10 }}
@@ -192,7 +192,10 @@ const ResultsPage = () => {
             className={`mb-8 pb-8 border-b border-gray-200 ${loadingStep >= 4 ? 'opacity-50' : ''}`}
           >
             <p className="text-lg text-gray-900 font-semibold">
-              Offre trouvée, calcul des économies...
+              {savingsData?.hasOffre 
+                ? 'Offre trouvée, calcul des économies...'
+                : 'Vérification de votre position tarifaire...'
+              }
             </p>
             {loadingStep >= 3 && (
               <motion.div
@@ -204,14 +207,17 @@ const ResultsPage = () => {
             )}
           </motion.div>
 
-          {/* Step 4 */}
+          {/* Step 4 - DYNAMIQUE */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: loadingStep >= 4 ? 1 : 0, y: loadingStep >= 4 ? 0 : 10 }}
             transition={{ duration: 0.6 }}
           >
             <p className="text-lg text-gray-900 font-semibold">
-              Vérification des résultats...
+              {savingsData?.hasOffre 
+                ? 'Vérification des résultats...'
+                : 'Analyse complète en cours...'
+              }
             </p>
             {loadingStep >= 4 && (
               <div className="flex items-center justify-center space-x-2 mt-4">
