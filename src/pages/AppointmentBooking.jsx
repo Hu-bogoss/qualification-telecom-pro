@@ -82,16 +82,7 @@ const AppointmentBooking = () => {
   const [errors, setErrors] = useState({});
   const [availableSlots, setAvailableSlots] = useState([]);
 
-  useEffect(() => {
-    generateAvailableSlots();
-  }, []);
-
-  // Régénérer les slots quand le département change (y compris après recherche SIRET)
-  useEffect(() => {
-    if (formData.department) {
-      generateAvailableSlots();
-    }
-  }, [formData.department]);
+  const generateAvailableSlots = () => {
     const slots = [];
     const today = new Date();
 
@@ -116,6 +107,10 @@ const AppointmentBooking = () => {
 
     setAvailableSlots(slots);
   };
+
+  useEffect(() => {
+    generateAvailableSlots();
+  }, []);
 
   useEffect(() => {
     if (formData.department) {
@@ -214,13 +209,11 @@ const AppointmentBooking = () => {
         }
       };
 
-      // Simulation d'un délai de recherche réaliste
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       if (mockDatabase[siret]) {
         const data = mockDatabase[siret];
 
-        // Mise à jour automatique de TOUS les champs
         setFormData(prev => ({
           ...prev,
           company: data.company,
@@ -230,7 +223,6 @@ const AppointmentBooking = () => {
           department: data.department
         }));
 
-        // Effacer les erreurs des champs auto-remplis
         setErrors(prev => ({
           ...prev,
           company: '',
@@ -240,7 +232,6 @@ const AppointmentBooking = () => {
           department: ''
         }));
 
-        // Régénérer les slots disponibles avec le nouveau département
         setTimeout(() => {
           generateAvailableSlots();
         }, 100);
