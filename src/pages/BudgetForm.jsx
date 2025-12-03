@@ -1,564 +1,418 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Check } from 'lucide-react';
-import { validateBudgetInputs } from '../utils/calculations';
+import { motion } from 'framer-motion';
+import {
+  CheckCircle,
+  ArrowRight,
+  ArrowLeft,
+  TrendingDown,
+  AlertCircle
+} from 'lucide-react';
 
-const BudgetForm = () => {
+const ResultsPage = () => {
   const navigate = useNavigate();
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [formData, setFormData] = useState({
-    operator: '',
-    operatorOther: '',
-    fixedBudget: '',
-    internetBudget: '',
-    phoneSystem: '',
-    cybersecurity: '',
-    cybersecurityBudget: '',
-    companySize: '',
-    role: '',
-    isDecisionMaker: false,
-    multiSite: false
-  });
-  const [errors, setErrors] = useState({});
-  const [completed, setCompleted] = useState(false);
+  const [budgetData, setBudgetData] = useState(null);
+  const [savingsData, setSavingsData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const baseQuestions = [
-    {
-      id: 'operator',
-      type: 'select',
-      title: 'Quel est votre opérateur actuel?',
-      description: 'Cela nous aide à analyser vos alternatives',
-      options: [
-        { value: 'orange', label: 'Orange', desc: '' },
-        { value: 'sfr', label: 'SFR', desc: '' },
-        { value: 'bouygues', label: 'Bouygues Telecom', desc: '' },
-        { value: 'free', label: 'Free', desc: '' },
-        { value: 'other', label: 'Autre opérateur', desc: '' }
-      ]
-    },
-    {
-      id: 'fixedBudget',
-      type: 'number',
-      title: 'À combien s\'élève la charge mensuelle de votre téléphonie fixe, y compris votre standard ?',
-      description: '',
-      placeholder: '150',
-      unit: '€/mois',
-      hint: 'Montant approximatif'
-    },
-    {
-      id: 'internetBudget',
-      type: 'number',
-      title: 'Quel montant dépense votre société chaque mois pour Internet ?',
-      description: '',
-      placeholder: '80',
-      unit: '€/mois',
-      hint: 'Montant approximatif'
-    },
-    {
-      id: 'cybersecurity',
-      type: 'select',
-      title: 'Avez-vous une solution cybersécurité?',
-      description: 'Antivirus, firewall, sécurité réseau...',
-      options: [
-        { value: 'yes', label: 'Oui', desc: 'Solution déployée' },
-        { value: 'no', label: 'Non', desc: 'Aucune' },
-        { value: 'unsure', label: 'Je ne sais pas', desc: 'Incertain' }
-      ]
-    },
-    {
-      id: 'companySize',
-      type: 'select',
-      title: 'Combien d\'employés avez-vous?',
-      description: 'Cela nous aide à personnaliser notre analyse',
-      options: [
-        { value: '0-5', label: '0 à 5', desc: 'Micro-entreprise' },
-        { value: '5-10', label: '5 à 10', desc: 'Petite équipe' },
-        { value: '10-20', label: '10 à 20', desc: 'PME' },
-        { value: '20+', label: '20+', desc: 'Entreprise' }
-      ]
-    },
-    {
-      id: 'role',
-      type: 'select',
-      title: 'Quelle est votre fonction?',
-      description: 'Cela nous aide à adapter notre approche',
-      options: [
-        { value: 'manager', label: 'Gérant', desc: 'PDG, Directeur Général' },
-        { value: 'admin', label: 'Directeur Administratif', desc: 'DAF, Direction Administrative' },
-        { value: 'other', label: 'Autre fonction', desc: 'Autre responsabilité' }
-      ]
-    },
-    {
-      id: 'multiSite',
-      type: 'boolean',
-      title: 'Avez-vous plusieurs sites ou bureaux?',
-      description: ''
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  };
+
+  const calculateSavings = (data) => {
+    const fixedBudget = parseFloat(data.fixedBudget) || 0;
+    const internetBudget = parseFloat(data.internetBudget) || 0;
+    const cyberBudget = parseFloat(data.cybersecurityBudget) || 0;
+
+    const totalBudget = fixedBudget + internetBudget + cyberBudget;
+
+    // Si fixe < 120€ : juste prix, pas d'économie
+    if (fixedBudget < 120) {
+      return {
+        totalBudget,
+        hasEconomies: false,
+        reason: 'justPrice',
+        minSavings: 0,
+        maxSavings: 0,
+        yearlySavings: 0,
+        monthlyAverageSavings: 0,
+        savingsPercentage: 0
+      };
     }
-  ];
 
-  // Construire la liste des questions à afficher dynamiquement
-  const buildDisplayQuestions = () => {
-    let questions = [...baseQuestions];
+    // Si fixe >= 120€ : économies entre 10-15% (aléatoire)
+    const savingsPercentage = Math.floor(Math.random() * 6) + 10; // 10-15%
+    const monthlySavings = totalBudget * (savingsPercentage / 100);
+    const yearlySavings = monthlySavings * 12;
 
-    // Si operator === 'other', ajouter la question après operator
-    if (formData.operator === 'other') {
-      const operatorIndex = questions.findIndex(q => q.id === 'operator');
-      if (operatorIndex !== -1) {
-        questions.splice(operatorIndex + 1, 0, {
-          id: 'operatorOther',
-          type: 'text',
-          title: 'Quel est votre opérateur?',
-          description: 'Veuillez préciser le nom de votre opérateur',
-          placeholder: 'Ex: Télécom X, Opérateur Local...',
-          hint: 'Nom de l\'opérateur'
-        });
+    return {
+      totalBudget,
+      hasEconomies: true,
+      reason: 'savings',
+      minSavings: Math.floor(monthlySavings),
+      maxSavings: Math.ceil(monthlySavings),
+      yearlySavings: Math.floor(yearlySavings),
+      monthlyAverageSavings: Math.floor(monthlySavings),
+      savingsPercentage: savingsPercentage
+    };
+  };
+
+  useEffect(() => {
+    const storedBudgetData = localStorage.getItem('budgetData');
+    if (storedBudgetData) {
+      try {
+        const data = JSON.parse(storedBudgetData);
+        setBudgetData(data);
+        
+        const savings = calculateSavings(data);
+        setSavingsData(savings);
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error parsing budget data:', error);
+        navigate('/');
       }
-    }
-
-    // Si cybersecurity === 'yes', ajouter la question du budget cybersécurité après
-    if (formData.cybersecurity === 'yes') {
-      const cyberIndex = questions.findIndex(q => q.id === 'cybersecurity');
-      if (cyberIndex !== -1) {
-        questions.splice(cyberIndex + 1, 0, {
-          id: 'cybersecurityBudget',
-          type: 'number',
-          title: 'Quel est votre budget cybersécurité mensuel?',
-          description: 'Antivirus, firewall, formations de sécurité...',
-          placeholder: '50',
-          unit: '€/mois',
-          hint: 'Montant approximatif'
-        });
-      }
-    }
-
-    // Si role === 'other', ajouter la question de vérification après
-    if (formData.role === 'other') {
-      const roleIndex = questions.findIndex(q => q.id === 'role');
-      if (roleIndex !== -1) {
-        questions.splice(roleIndex + 1, 0, {
-          id: 'isDecisionMaker',
-          type: 'checkbox',
-          title: 'Confirmation',
-          description: 'Avant de continuer, veuillez confirmer:',
-          label: 'Je certifie être décisionnaire dans mon entreprise'
-        });
-      }
-    }
-
-    return questions;
-  };
-
-  const displayQuestions = buildDisplayQuestions();
-  const question = displayQuestions[currentQuestion];
-  const progress = ((currentQuestion + 1) / displayQuestions.length) * 100;
-
-  const handleNumberChange = (value) => {
-    setFormData(prev => ({
-      ...prev,
-      [question.id]: value
-    }));
-    if (errors[question.id]) {
-      setErrors(prev => ({ ...prev, [question.id]: '' }));
-    }
-    
-    // Auto-advance si valide après 1400ms
-    if (value && !isNaN(value) && value >= 0) {
-      setTimeout(() => {
-        if (currentQuestion < displayQuestions.length - 1) {
-          setCurrentQuestion(currentQuestion + 1);
-        } else {
-          handleSubmit();
-        }
-      }, 1400);
-    }
-  };
-
-  const handleTextChange = (value) => {
-    setFormData(prev => ({
-      ...prev,
-      [question.id]: value
-    }));
-    if (errors[question.id]) {
-      setErrors(prev => ({ ...prev, [question.id]: '' }));
-    }
-    
-    // Auto-advance si texte saisi (min 2 caractères)
-    if (value.trim().length >= 2) {
-      setTimeout(() => {
-        if (currentQuestion < displayQuestions.length - 1) {
-          setCurrentQuestion(currentQuestion + 1);
-        } else {
-          handleSubmit();
-        }
-      }, 1400);
-    }
-  };
-
-  const handleSelectChange = (value) => {
-    setFormData(prev => ({
-      ...prev,
-      [question.id]: value
-    }));
-    if (errors[question.id]) {
-      setErrors(prev => ({ ...prev, [question.id]: '' }));
-    }
-    
-    // Auto-advance après sélection
-    setTimeout(() => {
-      if (currentQuestion < displayQuestions.length - 1) {
-        setCurrentQuestion(currentQuestion + 1);
-      } else {
-        handleSubmit();
-      }
-    }, 1400);
-  };
-
-  const handleBooleanChange = (value) => {
-    setFormData(prev => ({
-      ...prev,
-      [question.id]: value
-    }));
-    
-    // Auto-advance après sélection
-    setTimeout(() => {
-      if (currentQuestion < displayQuestions.length - 1) {
-        setCurrentQuestion(currentQuestion + 1);
-      } else {
-        handleSubmit();
-      }
-    }, 1400);
-  };
-
-  const handleCheckboxChange = (checked) => {
-    setFormData(prev => ({
-      ...prev,
-      [question.id]: checked
-    }));
-    if (errors[question.id]) {
-      setErrors(prev => ({ ...prev, [question.id]: '' }));
-    }
-    
-    // Auto-advance si coché
-    if (checked) {
-      setTimeout(() => {
-        if (currentQuestion < displayQuestions.length - 1) {
-          setCurrentQuestion(currentQuestion + 1);
-        } else {
-          handleSubmit();
-        }
-      }, 1400);
-    }
-  };
-
-  const handleSubmit = () => {
-    const validation = validateBudgetInputs(formData);
-    if (!validation.isValid) {
-      setErrors(validation.errors);
-      return;
-    }
-
-    localStorage.setItem('budgetData', JSON.stringify({
-      ...formData,
-      totalBudget: validation.totalBudget,
-      isEligible: validation.isEligible
-    }));
-
-    setCompleted(true);
-    setTimeout(() => {
-      navigate('/role');
-    }, 2000);
-  };
-
-  const handleBack = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(currentQuestion - 1);
     } else {
       navigate('/');
     }
+  }, [navigate]);
+
+  const handleBooking = () => {
+    // À adapter avec ta vraie page de réservation
+    navigate('/appointment');
   };
 
-  // Completion screen
-  if (completed) {
+  const handleBack = () => {
+    navigate('/budget');
+  };
+
+  if (loading || !budgetData || !savingsData) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-4">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center max-w-md"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center"
         >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 0.6 }}
-            className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6"
-          >
-            <Check className="w-8 h-8 text-blue-600" strokeWidth={3} />
-          </motion.div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-3">
-            Parfait!
-          </h1>
-          <p className="text-lg text-gray-600">
-            Nous analysons vos données...
-          </p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Analyse de vos données...</p>
         </motion.div>
       </div>
     );
   }
 
+  const { hasEconomies, reason } = savingsData;
+
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-white">
       {/* Fixed Header */}
       <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-md z-50 border-b border-gray-100">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="text-2xl font-bold text-blue-600">TelecomAudit</div>
-          <div className="text-sm text-gray-500">
-            Question {currentQuestion + 1} sur {displayQuestions.length}
-          </div>
+          <div className="text-sm text-gray-600">Résultats de votre analyse</div>
         </div>
-        <motion.div
-          className="h-1 bg-blue-600"
-          initial={{ width: '0%' }}
-          animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.5 }}
-        />
       </nav>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center pt-24 pb-8 px-4">
-        <div className="w-full max-w-2xl">
-          <AnimatePresence mode="wait">
+      <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto">
+          {/* Result Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-16"
+          >
             <motion.div
-              key={currentQuestion}
+              animate={{ rotate: 360 }}
+              transition={{ duration: 0.8 }}
+              className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-8"
+            >
+              {hasEconomies ? (
+                <TrendingDown className="w-8 h-8 text-blue-600" strokeWidth={2} />
+              ) : (
+                <CheckCircle className="w-8 h-8 text-green-600" strokeWidth={2} />
+              )}
+            </motion.div>
+
+            <motion.h1
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="text-5xl md:text-6xl font-bold text-gray-900 mb-6"
+            >
+              {hasEconomies ? 'Économies identifiées' : 'Juste prix confirmé'}
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="text-xl text-gray-600 max-w-2xl mx-auto"
+            >
+              {hasEconomies
+                ? `Vous pouvez économiser jusqu'à ${formatCurrency(savingsData.yearlySavings)} par an`
+                : 'Après analyse des offres sur le marché et des leviers d\'économie, vous payez le juste prix'}
+            </motion.p>
+          </motion.div>
+
+          {/* Main Result Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.8 }}
+            className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 md:p-12 mb-12"
+          >
+            {hasEconomies ? (
+              /* Economies Case */
+              <div className="space-y-8">
+                {/* Savings Breakdown */}
+                <div className="bg-gradient-to-r from-blue-50 to-blue-50 rounded-xl p-8 text-center">
+                  <p className="text-sm text-gray-600 mb-2">Économies mensuelles</p>
+                  <motion.h2
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="text-5xl font-bold text-blue-600 mb-2"
+                  >
+                    {formatCurrency(savingsData.monthlyAverageSavings)}
+                  </motion.h2>
+                  <p className="text-sm text-gray-600">
+                    soit <span className="font-semibold">{savingsData.savingsPercentage}%</span> de réduction
+                  </p>
+
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <p className="text-sm text-gray-600 mb-1">Économies annuelles</p>
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.6 }}
+                      className="text-3xl font-bold text-green-600"
+                    >
+                      {formatCurrency(savingsData.yearlySavings)}
+                    </motion.p>
+                  </div>
+                </div>
+
+                {/* Current Budget */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="p-6 bg-gray-50 rounded-xl border border-gray-200">
+                    <p className="text-sm text-gray-600 mb-2">Budget actuel mensuel</p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {formatCurrency(savingsData.totalBudget)}
+                    </p>
+                  </div>
+
+                  <div className="p-6 bg-green-50 rounded-xl border border-green-200">
+                    <p className="text-sm text-green-700 mb-2">Nouvel budget estimé</p>
+                    <p className="text-3xl font-bold text-green-600">
+                      {formatCurrency(savingsData.totalBudget - savingsData.monthlyAverageSavings)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Savings Gauge */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold text-gray-900">Potentiel d'économie</p>
+                    <p className="text-sm font-semibold text-blue-600">{savingsData.savingsPercentage}%</p>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${savingsData.savingsPercentage}%` }}
+                      transition={{ delay: 0.7, duration: 1 }}
+                      className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full"
+                    />
+                  </div>
+                </div>
+
+                {/* Key Insights */}
+                <div className="grid md:grid-cols-3 gap-4">
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 }}
+                    className="p-4 bg-blue-50 rounded-lg border border-blue-200"
+                  >
+                    <p className="text-sm text-blue-700 font-semibold">Analyse</p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      {savingsData.savingsPercentage}% de réduction identifiée
+                    </p>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.9 }}
+                    className="p-4 bg-green-50 rounded-lg border border-green-200"
+                  >
+                    <p className="text-sm text-green-700 font-semibold">Économies</p>
+                    <p className="text-xs text-green-600 mt-1">
+                      {formatCurrency(savingsData.yearlySavings)}/an
+                    </p>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1 }}
+                    className="p-4 bg-purple-50 rounded-lg border border-purple-200"
+                  >
+                    <p className="text-sm text-purple-700 font-semibold">Audit gratuit</p>
+                    <p className="text-xs text-purple-600 mt-1">
+                      30-45 min sur site
+                    </p>
+                  </motion.div>
+                </div>
+              </div>
+            ) : (
+              /* Just Price Case */
+              <div className="space-y-8">
+                <div className="text-center">
+                  <motion.div
+                    initial={{ scale: 0.9 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mb-4"
+                  >
+                    <CheckCircle className="w-6 h-6 text-green-600" strokeWidth={2} />
+                  </motion.div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                    Budget télécom optimisé
+                  </h2>
+                  <p className="text-lg text-gray-600 mb-6">
+                    Votre budget actuel : <span className="font-semibold">{formatCurrency(savingsData.totalBudget)}/mois</span>
+                  </p>
+                </div>
+
+                <div className="bg-green-50 rounded-xl p-8 border border-green-200">
+                  <h3 className="font-semibold text-green-900 mb-4">
+                    Analyse du marché complétée
+                  </h3>
+
+                  <div className="space-y-4">
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="flex items-start space-x-3"
+                    >
+                      <CheckCircle className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <p className="font-semibold text-green-900">Offres analysées</p>
+                        <p className="text-sm text-green-700 mt-0.5">
+                          Plus de 500 offres du marché comparées
+                        </p>
+                      </div>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.5 }}
+                      className="flex items-start space-x-3"
+                    >
+                      <CheckCircle className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <p className="font-semibold text-green-900">Leviers d'économie</p>
+                        <p className="text-sm text-green-700 mt-0.5">
+                          Tous les leviers d'économie ont été évalués
+                        </p>
+                      </div>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.6 }}
+                      className="flex items-start space-x-3"
+                    >
+                      <CheckCircle className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <p className="font-semibold text-green-900">Juste prix confirmé</p>
+                        <p className="text-sm text-green-700 mt-0.5">
+                          Vous payez le meilleur prix du marché
+                        </p>
+                      </div>
+                    </motion.div>
+                  </div>
+                </div>
+
+                <div className="p-6 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-blue-700">
+                    <strong>💡 Conseil:</strong> Révisez vos contrats annuellement pour rester dans les meilleures conditions tarifaires du marché.
+                  </p>
+                </div>
+              </div>
+            )}
+          </motion.div>
+
+          {/* CTA Section */}
+          {hasEconomies && (
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.4 }}
+              transition={{ delay: 0.3, duration: 0.8 }}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 md:p-12 text-center mb-12 text-white"
             >
-              {/* Question Header */}
-              <div className="text-center mb-12">
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-                  {question.title}
-                </h1>
-                {question.description && (
-                  <p className="text-lg text-gray-600">
-                    {question.description}
-                  </p>
-                )}
-              </div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Audit gratuit personnalisé
+              </h2>
+              <p className="text-lg text-blue-100 mb-8 max-w-2xl mx-auto">
+                Un consultant se déplace gratuitement pour un audit express. Diagnostic détaillé et devis personnalisé sans engagement.
+              </p>
 
-              {/* Question Content */}
-              <div className="mb-12">
-                {question.type === 'number' && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <div className="relative mb-3">
-                      <input
-                        type="number"
-                        placeholder={question.placeholder}
-                        value={formData[question.id]}
-                        onChange={(e) => handleNumberChange(e.target.value)}
-                        className={`w-full text-center text-5xl md:text-6xl font-light bg-white border-b-2 border-gray-200 focus:border-blue-600 focus:outline-none py-8 transition pr-24 ${
-                          errors[question.id] ? 'border-red-300' : ''
-                        }`}
-                        style={{
-                          appearance: 'textfield'
-                        }}
-                        autoFocus
-                      />
-                      <style>{`
-                        input[type='number']::-webkit-outer-spin-button,
-                        input[type='number']::-webkit-inner-spin-button {
-                          -webkit-appearance: none;
-                          margin: 0;
-                        }
-                      `}</style>
-                      <div className="absolute right-0 top-1/2 -translate-y-1/2 text-3xl text-gray-400 font-light pointer-events-none">
-                        {question.unit}
-                      </div>
-                    </div>
-                    {errors[question.id] && (
-                      <p className="text-red-600 text-sm text-center mt-4">
-                        {errors[question.id]}
-                      </p>
-                    )}
-                    <p className="text-center text-sm text-gray-500 mt-6">
-                      {question.hint}
-                    </p>
-                  </motion.div>
-                )}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleBooking}
+                className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all inline-flex items-center space-x-2"
+              >
+                <span>Réserver mon audit gratuit</span>
+                <ArrowRight className="w-5 h-5" />
+              </motion.button>
 
-                {question.type === 'text' && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <input
-                      type="text"
-                      placeholder={question.placeholder}
-                      value={formData[question.id]}
-                      onChange={(e) => handleTextChange(e.target.value)}
-                      className={`w-full px-4 py-4 border-b-2 border-gray-200 focus:border-blue-600 focus:outline-none text-xl transition ${
-                        errors[question.id] ? 'border-red-300' : ''
-                      }`}
-                      autoFocus
-                    />
-                    {errors[question.id] && (
-                      <p className="text-red-600 text-sm mt-4">
-                        {errors[question.id]}
-                      </p>
-                    )}
-                    <p className="text-sm text-gray-500 mt-6">
-                      {question.hint}
-                    </p>
-                  </motion.div>
-                )}
-
-                {question.type === 'select' && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="space-y-3"
-                  >
-                    {question.options.map((option, idx) => (
-                      <motion.button
-                        key={option.value}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 + idx * 0.1 }}
-                        onClick={() => handleSelectChange(option.value)}
-                        className={`w-full p-6 text-left rounded-xl border-2 transition-all ${
-                          formData[question.id] === option.value
-                            ? 'border-blue-600 bg-blue-50'
-                            : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-white'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-semibold text-gray-900">
-                              {option.label}
-                            </p>
-                            {option.desc && (
-                              <p className="text-sm text-gray-600 mt-1">
-                                {option.desc}
-                              </p>
-                            )}
-                          </div>
-                          {formData[question.id] === option.value && (
-                            <div className="flex-shrink-0 ml-4">
-                              <Check className="w-6 h-6 text-blue-600" strokeWidth={3} />
-                            </div>
-                          )}
-                        </div>
-                      </motion.button>
-                    ))}
-                  </motion.div>
-                )}
-
-                {question.type === 'checkbox' && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <label className={`flex items-start space-x-4 p-6 rounded-xl border-2 cursor-pointer transition-all ${
-                      formData[question.id]
-                        ? 'border-blue-600 bg-blue-50'
-                        : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-white'
-                    }`}>
-                      <input
-                        type="checkbox"
-                        checked={formData[question.id]}
-                        onChange={(e) => handleCheckboxChange(e.target.checked)}
-                        className="mt-1 h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
-                      />
-                      <span className="text-lg font-semibold text-gray-900">
-                        {question.label}
-                      </span>
-                    </label>
-                    {errors[question.id] && (
-                      <p className="text-red-600 text-sm mt-4">
-                        {errors[question.id]}
-                      </p>
-                    )}
-                  </motion.div>
-                )}
-
-                {question.type === 'boolean' && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="space-y-3"
-                  >
-                    {[
-                      { value: true, label: 'Oui', desc: 'Nous avons plusieurs sites' },
-                      { value: false, label: 'Non', desc: 'Un seul site' }
-                    ].map((option, idx) => (
-                      <motion.button
-                        key={String(option.value)}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 + idx * 0.1 }}
-                        onClick={() => handleBooleanChange(option.value)}
-                        className={`w-full p-6 text-left rounded-xl border-2 transition-all ${
-                          formData[question.id] === option.value
-                            ? 'border-blue-600 bg-blue-50'
-                            : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-white'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-semibold text-gray-900">
-                              {option.label}
-                            </p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {option.desc}
-                            </p>
-                          </div>
-                          {formData[question.id] === option.value && (
-                            <div className="flex-shrink-0 ml-4">
-                              <Check className="w-6 h-6 text-blue-600" strokeWidth={3} />
-                            </div>
-                          )}
-                        </div>
-                      </motion.button>
-                    ))}
-                  </motion.div>
-                )}
-              </div>
+              <p className="text-sm text-blue-100 mt-6">
+                ✓ Sans engagement • ✓ Audit personnalisé • ✓ Devis gratuit
+              </p>
             </motion.div>
-          </AnimatePresence>
+          )}
+
+          {/* Footer Navigation */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="flex items-center justify-between"
+          >
+            <motion.button
+              onClick={handleBack}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 font-semibold transition"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="hidden sm:inline">Retour</span>
+            </motion.button>
+
+            <motion.button
+              onClick={() => navigate('/')}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="text-gray-600 hover:text-gray-900 font-semibold transition"
+            >
+              Nouvelle estimation
+            </motion.button>
+          </motion.div>
         </div>
       </div>
-
-      {/* Footer - Buttons */}
-      <motion.div
-        className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 sm:p-6"
-        initial={{ y: 100 }}
-        animate={{ y: 0 }}
-      >
-        <div className="max-w-2xl mx-auto flex items-center justify-start">
-          <motion.button
-            onClick={handleBack}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 font-semibold transition"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="hidden sm:inline">Retour</span>
-          </motion.button>
-        </div>
-      </motion.div>
-
-      {/* Safety margin for mobile */}
-      <div className="h-24 sm:h-20" />
     </div>
   );
 };
 
-export default BudgetForm;
+export default ResultsPage;
