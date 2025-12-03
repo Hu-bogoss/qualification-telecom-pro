@@ -155,7 +155,7 @@ const WelcomeConsent = () => {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' })}
+              onClick={() => navigate('/budget')}
               className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg transition-all inline-flex items-center space-x-2"
             >
               <span>Commencer l'analyse</span>
