@@ -33,34 +33,53 @@ const ResultsPage = () => {
 
     const totalBudget = fixedBudget + internetBudget + cyberBudget;
 
-    // Si fixe < 120€ : juste prix, pas d'économie
-    if (fixedBudget < 120) {
+    // Si fixe < 120€ ET internet < 150€ : Aucune offre trouvée (juste prix)
+    if (fixedBudget < 120 && internetBudget < 150) {
       return {
         totalBudget,
         fixedBudget,
         internetBudget,
         cyberBudget,
         hasEconomies: false,
+        hasOffre: false,
+        reason: 'noOfferFound',
         yearlySavings: 0,
         monthlyAverageSavings: 0,
         savingsPercentage: 0
       };
     }
 
-    // Si fixe >= 120€ : économies entre 10-15% (aléatoire)
-    const savingsPercentage = Math.floor(Math.random() * 6) + 10; // 10-15%
-    const monthlySavings = totalBudget * (savingsPercentage / 100);
-    const yearlySavings = monthlySavings * 12;
+    // Si fixe >= 120€ OU internet >= 150€ : Offre trouvée avec économies
+    if (fixedBudget >= 120 || internetBudget >= 150) {
+      const savingsPercentage = Math.floor(Math.random() * 6) + 10; // 10-15%
+      const monthlySavings = totalBudget * (savingsPercentage / 100);
+      const yearlySavings = monthlySavings * 12;
+
+      return {
+        totalBudget,
+        fixedBudget,
+        internetBudget,
+        cyberBudget,
+        hasEconomies: true,
+        hasOffre: true,
+        reason: 'offerFound',
+        yearlySavings: Math.floor(yearlySavings),
+        monthlyAverageSavings: Math.floor(monthlySavings),
+        savingsPercentage: savingsPercentage
+      };
+    }
 
     return {
       totalBudget,
       fixedBudget,
       internetBudget,
       cyberBudget,
-      hasEconomies: true,
-      yearlySavings: Math.floor(yearlySavings),
-      monthlyAverageSavings: Math.floor(monthlySavings),
-      savingsPercentage: savingsPercentage
+      hasEconomies: false,
+      hasOffre: false,
+      reason: 'unknown',
+      yearlySavings: 0,
+      monthlyAverageSavings: 0,
+      savingsPercentage: 0
     };
   };
 
@@ -219,7 +238,7 @@ const ResultsPage = () => {
     );
   }
 
-  const { hasEconomies, fixedBudget, internetBudget, cyberBudget } = savingsData;
+  const { hasEconomies, hasOffre, fixedBudget, internetBudget, cyberBudget } = savingsData;
 
   return (
     <div className="min-h-screen bg-white">
@@ -243,9 +262,17 @@ const ResultsPage = () => {
             <motion.div
               animate={{ scale: [1, 1.15, 1] }}
               transition={{ duration: 1, delay: 0.2 }}
-              className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full mb-8 shadow-lg"
+              className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-8 shadow-lg ${
+                savingsData.hasOffre
+                  ? 'bg-gradient-to-br from-blue-500 to-blue-600'
+                  : 'bg-gradient-to-br from-green-500 to-green-600'
+              }`}
             >
-              <TrendingDown className="w-10 h-10 text-white" strokeWidth={2} />
+              {savingsData.hasOffre ? (
+                <TrendingDown className="w-10 h-10 text-white" strokeWidth={2} />
+              ) : (
+                <CheckCircle className="w-10 h-10 text-white" strokeWidth={2} />
+              )}
             </motion.div>
 
             <motion.h1
@@ -254,7 +281,7 @@ const ResultsPage = () => {
               transition={{ delay: 0.3, duration: 0.8 }}
               className="text-6xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight"
             >
-              {hasEconomies ? 'Offre trouvée!' : 'Analyse complète'}
+              {savingsData.hasOffre ? 'Offre trouvée!' : 'Aucune offre trouvée'}
             </motion.h1>
 
             <motion.p
@@ -263,9 +290,9 @@ const ResultsPage = () => {
               transition={{ delay: 0.4, duration: 0.8 }}
               className="text-2xl text-gray-600 max-w-3xl mx-auto font-light"
             >
-              {hasEconomies
+              {savingsData.hasOffre
                 ? `L'IA a identifié une offre équivalente\navec un meilleur coût`
-                : 'Votre budget télécom est bien optimisé'}
+                : `Votre offre actuelle est bien positionnée\nvous payez le juste prix`}
             </motion.p>
           </motion.div>
 
@@ -352,7 +379,8 @@ const ResultsPage = () => {
             </div>
 
             {/* AI Finding - Main Highlight */}
-            {hasEconomies && (
+            {savingsData.hasOffre ? (
+              /* OFFRE TROUVÉE */
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -393,47 +421,107 @@ const ResultsPage = () => {
                   </div>
                 </div>
               </motion.div>
+            ) : (
+              /* AUCUNE OFFRE TROUVÉE - JUSTE PRIX */
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1 }}
+                className="bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 rounded-3xl p-12 border-2 border-blue-200 shadow-lg"
+              >
+                <div className="flex items-start space-x-6">
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                    className="flex-shrink-0"
+                  >
+                    <CheckCircle className="w-12 h-12 text-blue-600" strokeWidth={2} />
+                  </motion.div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                      Votre offre actuelle est bien positionnée
+                    </h3>
+                    <p className="text-lg text-gray-700 mb-8 leading-relaxed">
+                      Après analyse complète du marché et comparaison avec plus de 500 offres, nous avons confirmé que <span className="font-bold">vous payez le juste prix</span>. Aucune offre équivalente meilleure n'a été trouvée sur le marché.
+                    </p>
+
+                    {/* Summary Box */}
+                    <div className="bg-white rounded-xl p-6 border border-blue-200">
+                      <h4 className="font-semibold text-gray-900 mb-4">Summary de votre offre</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between pb-3 border-b border-gray-200">
+                          <span className="text-gray-700">Téléphonie fixe</span>
+                          <span className="font-bold text-gray-900">{formatCurrency(fixedBudget)}/mois</span>
+                        </div>
+                        <div className="flex items-center justify-between pb-3 border-b border-gray-200">
+                          <span className="text-gray-700">Internet</span>
+                          <span className="font-bold text-gray-900">{formatCurrency(internetBudget)}/mois</span>
+                        </div>
+                        {cyberBudget > 0 && (
+                          <div className="flex items-center justify-between pb-3 border-b border-gray-200">
+                            <span className="text-gray-700">Antivirus</span>
+                            <span className="font-bold text-gray-900">{formatCurrency(cyberBudget)}/mois</span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between pt-2">
+                          <span className="font-semibold text-gray-900">Total mensuel</span>
+                          <span className="text-2xl font-bold text-blue-600">{formatCurrency(savingsData.totalBudget)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Recommendation */}
+                    <div className="mt-6 p-4 bg-blue-100 rounded-lg border border-blue-300">
+                      <p className="text-sm text-blue-900">
+                        <strong>💡 Conseil:</strong> Continuez à surveiller régulièrement le marché. Nous vous recommandons de réviser votre contrat annuellement pour rester dans les meilleures conditions tarifaires.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
             )}
 
             {/* Divider */}
             <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
 
-            {/* CTA Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.1, duration: 0.8 }}
-              className="bg-gradient-to-br from-blue-600 via-blue-600 to-blue-700 rounded-3xl p-12 md:p-16 text-center text-white shadow-2xl"
-            >
+            {/* CTA Section - Visible seulement si offre trouvée */}
+            {savingsData.hasOffre && (
               <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                className="inline-flex items-center justify-center w-12 h-12 bg-white/20 rounded-full mb-8"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.1, duration: 0.8 }}
+                className="bg-gradient-to-br from-blue-600 via-blue-600 to-blue-700 rounded-3xl p-12 md:p-16 text-center text-white shadow-2xl"
               >
-                <Zap className="w-6 h-6" />
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                  className="inline-flex items-center justify-center w-12 h-12 bg-white/20 rounded-full mb-8"
+                >
+                  <Zap className="w-6 h-6" />
+                </motion.div>
+
+                <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+                  Audit gratuit personnalisé
+                </h2>
+                <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto leading-relaxed">
+                  Un consultant se déplace gratuitement pour un audit express. Diagnostic détaillé et devis personnalisé sans engagement.
+                </p>
+
+                <motion.button
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleBooking}
+                  className="bg-white text-blue-600 px-10 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all inline-flex items-center space-x-3"
+                >
+                  <span>Réserver mon audit gratuit</span>
+                  <ArrowRight className="w-5 h-5" />
+                </motion.button>
+
+                <p className="text-sm text-blue-100 mt-8">
+                  ✓ Sans engagement • ✓ Audit personnalisé • ✓ Devis gratuit
+                </p>
               </motion.div>
-
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-                Audit gratuit personnalisé
-              </h2>
-              <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto leading-relaxed">
-                Un consultant se déplace gratuitement pour un audit express. Diagnostic détaillé et devis personnalisé sans engagement.
-              </p>
-
-              <motion.button
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleBooking}
-                className="bg-white text-blue-600 px-10 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all inline-flex items-center space-x-3"
-              >
-                <span>Réserver mon audit gratuit</span>
-                <ArrowRight className="w-5 h-5" />
-              </motion.button>
-
-              <p className="text-sm text-blue-100 mt-8">
-                ✓ Sans engagement • ✓ Audit personnalisé • ✓ Devis gratuit
-              </p>
-            </motion.div>
+            )}
           </motion.div>
 
           {/* Footer Navigation */}
