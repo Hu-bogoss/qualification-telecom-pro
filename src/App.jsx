@@ -5,7 +5,6 @@ import Navbar from './components/Navbar';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
 import WelcomeConsent from './pages/WelcomeConsent';
 import BudgetForm from './pages/BudgetForm';
-import RoleSelection from './pages/RoleSelection';
 import ResultsPage from './pages/ResultsPage';
 import AppointmentBooking from './pages/AppointmentBooking';
 import SuccessPage from './pages/SuccessPage';
@@ -18,7 +17,6 @@ function App() {
     <Router>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-sky-50">
         <Navbar />
-
         <Routes>
           <Route
             path="/"
@@ -45,20 +43,6 @@ function App() {
                 transition={pageTransition}
               >
                 <BudgetForm />
-              </motion.div>
-            }
-          />
-          <Route
-            path="/role"
-            element={
-              <motion.div
-                initial="initial"
-                animate="in"
-                exit="out"
-                variants={pageVariants}
-                transition={pageTransition}
-              >
-                <RoleSelection />
               </motion.div>
             }
           />
