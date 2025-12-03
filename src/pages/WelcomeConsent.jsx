@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, CheckCircle, Shield, Zap } from 'lucide-react';
-import Card from '../components/Card';
 
 const WelcomeConsent = () => {
   const navigate = useNavigate();
@@ -11,18 +10,7 @@ const WelcomeConsent = () => {
     professional: false
   });
   const [errors, setErrors] = useState({});
-  const timerInitializedRef = useRef(false);
-
-  // Countdown timer - Only initialize ONCE
-  useEffect(() => {
-    if (timerInitializedRef.current) return;
-    timerInitializedRef.current = true;
-
-    const timer = setInterval(() => {
-      // Timer logic if needed
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const formSectionRef = useRef(null);
 
   const handleConsentChange = (type) => {
     setConsents(prev => ({
@@ -61,12 +49,10 @@ const WelcomeConsent = () => {
 
   // Operators data
   const operators = [
-    { name: 'Orange', logo: '🟠', color: '#FF6600' },
-    { name: 'SFR', logo: '🔴', color: '#FF0000' },
-    { name: 'Bouygues', logo: '🔵', color: '#0066FF' },
-    { name: 'Free', logo: '⚫', color: '#000000' },
-    { name: 'Crosscall', logo: '🟢', color: '#00AA00' },
-    { name: 'Autres', logo: '⭐', color: '#666666' }
+    { name: 'Orange', logo: '🟠' },
+    { name: 'SFR', logo: '🔴' },
+    { name: 'Bouygues', logo: '🔵' },
+    { name: 'Free', logo: '⚫' },
   ];
 
   const steps = [
@@ -131,7 +117,7 @@ const WelcomeConsent = () => {
             <p className="text-sm text-gray-500 mb-6 uppercase tracking-wide">
               Nous travaillons avec tous les opérateurs
             </p>
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mb-12">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
               {operators.map((op, idx) => (
                 <motion.div
                   key={idx}
@@ -145,7 +131,7 @@ const WelcomeConsent = () => {
             </div>
           </motion.div>
 
-          {/* Main CTA */}
+          {/* Main CTA - BUTTON TO START */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -155,7 +141,10 @@ const WelcomeConsent = () => {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => navigate('/budget')}
+              onClick={() => {
+                console.log('Button clicked - navigating to /budget');
+                navigate('/budget');
+              }}
               className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg transition-all inline-flex items-center space-x-2"
             >
               <span>Commencer l'analyse</span>
@@ -206,12 +195,6 @@ const WelcomeConsent = () => {
                 <p className="text-gray-600 text-sm leading-relaxed">
                   {step.description}
                 </p>
-
-                {idx < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-24 -right-4 w-8 h-8 text-blue-300">
-                    →
-                  </div>
-                )}
               </motion.div>
             ))}
           </div>
@@ -291,134 +274,8 @@ const WelcomeConsent = () => {
         </div>
       </section>
 
-      {/* ===== BENEFITS ===== */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-blue-50">
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="grid md:grid-cols-2 gap-12"
-          >
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-8">
-                Pourquoi nous choisir?
-              </h2>
-
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0, duration: 0.8 }}
-                viewport={{ once: true }}
-                className="space-y-6"
-              >
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0">
-                    <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-blue-600 text-white">
-                      ✓
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">
-                      Économies réelles
-                    </h3>
-                    <p className="text-gray-600 text-sm">
-                      Nos clients économisent en moyenne 8 à 20% par an
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0">
-                    <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-blue-600 text-white">
-                      ✓
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">
-                      Gratuit et sans engagement
-                    </h3>
-                    <p className="text-gray-600 text-sm">
-                      L'analyse est 100% gratuite, aucun engagement requis
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0">
-                    <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-blue-600 text-white">
-                      ✓
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">
-                      Experts en télécom
-                    </h3>
-                    <p className="text-gray-600 text-sm">
-                      Notre équipe maîtrise tous les contrats et offres du marché
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0">
-                    <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-blue-600 text-white">
-                      ✓
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">
-                      Suivi personnalisé
-                    </h3>
-                    <p className="text-gray-600 text-sm">
-                      On vous accompagne jusqu'à la signature du nouveau contrat
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2, duration: 0.8 }}
-              viewport={{ once: true }}
-              className="bg-white rounded-lg p-8 border border-gray-200"
-            >
-              <div className="space-y-6">
-                <div>
-                  <p className="text-5xl font-bold text-blue-600 mb-2">8-20%</p>
-                  <p className="text-gray-600">
-                    Économies moyennes par an
-                  </p>
-                </div>
-
-                <div className="h-px bg-gray-200"></div>
-
-                <div>
-                  <p className="text-5xl font-bold text-blue-600 mb-2">2 min</p>
-                  <p className="text-gray-600">
-                    Temps pour compléter l'analyse
-                  </p>
-                </div>
-
-                <div className="h-px bg-gray-200"></div>
-
-                <div>
-                  <p className="text-5xl font-bold text-blue-600 mb-2">500+</p>
-                  <p className="text-gray-600">
-                    Offres analysées en temps réel
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
       {/* ===== FORM SECTION ===== */}
-      <section id="form-section" className="py-20 px-4 sm:px-6 lg:px-8">
+      <section id="form-section" ref={formSectionRef} className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -435,7 +292,7 @@ const WelcomeConsent = () => {
               </p>
             </div>
 
-            <Card className="p-8 border border-gray-200">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
               <div className="space-y-6">
                 {/* Contact Consent */}
                 <div className="border border-gray-200 rounded-lg p-5 hover:border-blue-300 transition">
@@ -506,7 +363,7 @@ const WelcomeConsent = () => {
                   Gratuit • Sans engagement • Analyse en 2 minutes
                 </p>
               </div>
-            </Card>
+            </div>
           </motion.div>
         </div>
       </section>
