@@ -125,144 +125,113 @@ const AppointmentBooking = () => {
     setSiretError('');
 
     try {
-      // Essayer d'abord API Pappers (plus fiable)
-      const papersResponse = await tryPappersAPI(siret);
-      if (papersResponse) {
-        setSiretLoading(false);
-        return;
-      }
+      // Base de données mock avec SIRET de test
+      // À remplacer par une vraie API backend une fois le site déployé
+      const mockDatabase = {
+        '12345678901234': {
+          company: 'TechSolutions SARL',
+          address: '123 Avenue des Champs-Élysées',
+          postalCode: '75008',
+          city: 'Paris',
+          department: '75'
+        },
+        '98765432109876': {
+          company: 'Innovation Digital SAS',
+          address: '45 Rue de la République',
+          postalCode: '69002',
+          city: 'Lyon',
+          department: '69'
+        },
+        '11223344556677': {
+          company: 'Marseille Telecom EURL',
+          address: '78 La Canebière',
+          postalCode: '13001',
+          city: 'Marseille',
+          department: '13'
+        },
+        '33445566778899': {
+          company: 'Toulouse Tech SA',
+          address: '156 Rue du Faubourg Saint-Honoré',
+          postalCode: '31000',
+          city: 'Toulouse',
+          department: '31'
+        },
+        '55667788990011': {
+          company: 'Nice Innovation SARL',
+          address: '89 Promenade des Anglais',
+          postalCode: '06000',
+          city: 'Nice',
+          department: '06'
+        },
+        '77889900112233': {
+          company: 'Strasbourg Digital SAS',
+          address: '234 Grande Rue',
+          postalCode: '67000',
+          city: 'Strasbourg',
+          department: '67'
+        },
+        '99001122334455': {
+          company: 'Bordeaux Solutions EURL',
+          address: '67 Cours de l\'Intendance',
+          postalCode: '33000',
+          city: 'Bordeaux',
+          department: '33'
+        },
+        '13579246801357': {
+          company: 'Lille Telecom SA',
+          address: '145 Rue Nationale',
+          postalCode: '59000',
+          city: 'Lille',
+          department: '59'
+        },
+        '24681357902468': {
+          company: 'Nantes Digital SARL',
+          address: '78 Rue Crébillon',
+          postalCode: '44000',
+          city: 'Nantes',
+          department: '44'
+        },
+        '36925814703692': {
+          company: 'Rennes Tech SAS',
+          address: '123 Rue Saint-Malo',
+          postalCode: '35000',
+          city: 'Rennes',
+          department: '35'
+        }
+      };
 
-      // Fallback: API OpenDataSoft
-      const odResponse = await tryOpenDataSoftAPI(siret);
-      if (odResponse) {
-        setSiretLoading(false);
-        return;
-      }
+      // Simulation d'un délai réseau
+      await new Promise(resolve => setTimeout(resolve, 800));
 
-      // Fallback: API Verifier (basique)
-      const verifierResponse = await tryVerifierAPI(siret);
-      if (verifierResponse) {
-        setSiretLoading(false);
-        return;
-      }
+      if (mockDatabase[siret]) {
+        const data = mockDatabase[siret];
 
-      setSiretError('SIRET non trouvé. Veuillez saisir manuellement.');
+        setFormData(prev => ({
+          ...prev,
+          company: data.company,
+          address: data.address,
+          postalCode: data.postalCode,
+          city: data.city,
+          department: data.department
+        }));
+
+        setErrors(prev => ({
+          ...prev,
+          company: '',
+          address: '',
+          postalCode: '',
+          city: '',
+          department: ''
+        }));
+      } else {
+        setSiretError('SIRET non trouvé. Veuillez saisir manuellement les données.');
+      }
     } catch (error) {
-      console.error('Erreur API SIRÈNE:', error);
+      console.error('Erreur:', error);
       setSiretError('Erreur de recherche. Veuillez saisir manuellement.');
     } finally {
       setSiretLoading(false);
     }
-  };
-
-  const tryPappersAPI = async (siret) => {
-    try {
-      const response = await fetch(
-        `https://api.pappers.fr/v2/company?siret=${siret}`,
-        { method: 'GET', headers: { 'Accept': 'application/json' } }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.company) {
-          const codePostal = data.company.postal_code || '';
-          const department = codePostal.substring(0, 2);
-
-          setFormData(prev => ({
-            ...prev,
-            company: data.company.name || 'Entreprise',
-            address: data.company.address || '',
-            postalCode: codePostal,
-            city: data.company.city || '',
-            department: department
-          }));
-
-          setErrors(prev => ({
-            ...prev,
-            company: '', address: '', postalCode: '', city: '', department: ''
-          }));
-
-          return true;
-        }
-      }
-    } catch (error) {
-      console.error('Erreur Pappers API:', error);
-    }
-    return false;
-  };
-
-  const tryOpenDataSoftAPI = async (siret) => {
-    try {
-      const response = await fetch(
-        `https://data.opendatasoft.com/api/v2/catalog/datasets/sirene_v3/records?where=siret%3D%22${siret}%22&limit=1`,
-        { method: 'GET', headers: { 'Accept': 'application/json' } }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.results && data.results.length > 0) {
-          const record = data.results[0].record.fields;
-          const codePostal = record.code_postal || '';
-          const department = codePostal.substring(0, 2);
-
-          setFormData(prev => ({
-            ...prev,
-            company: record.nom_commercial || record.denomination || 'Entreprise',
-            address: record.adresse_complete || '',
-            postalCode: codePostal,
-            city: record.libelle_commune || '',
-            department: department
-          }));
-
-          setErrors(prev => ({
-            ...prev,
-            company: '', address: '', postalCode: '', city: '', department: ''
-          }));
-
-          return true;
-        }
-      }
-    } catch (error) {
-      console.error('Erreur OpenDataSoft API:', error);
-    }
-    return false;
-  };
-
-  const tryVerifierAPI = async (siret) => {
-    try {
-      // Verifier.com API (basique, sans authentification)
-      const response = await fetch(
-        `https://api.verifier.com/v1/company/siret/${siret}`,
-        { method: 'GET', headers: { 'Accept': 'application/json' } }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data) {
-          const codePostal = data.postal_code || '';
-          const department = codePostal.substring(0, 2);
-
-          setFormData(prev => ({
-            ...prev,
-            company: data.name || 'Entreprise',
-            address: data.address || '',
-            postalCode: codePostal,
-            city: data.city || '',
-            department: department
-          }));
-
-          setErrors(prev => ({
-            ...prev,
-            company: '', address: '', postalCode: '', city: '', department: ''
-          }));
-
-          return true;
-        }
-      }
-    } catch (error) {
-      console.error('Erreur Verifier API:', error);
-    }
-    return false;
   };
 
   const handleSiretChange = (value) => {
