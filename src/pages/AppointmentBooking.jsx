@@ -537,23 +537,23 @@ const AppointmentBooking = () => {
                       </label>
                       <div className="relative">
                         <MapPin className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                        <select
-                          disabled={formData.siret.length === 14}
-                          className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                            errors.department ? 'border-red-300' : 'border-gray-300'
-                          } ${formData.siret.length === 14 ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                          value={formData.department}
-                          onChange={(e) => handleInputChange('department', e.target.value)}
-                        >
-                          <option value="">Sélect.</option>
-                          {DEPARTMENTS.map((dept) => (
-                            <option key={dept.code} value={dept.code}>
-                              {dept.code}
-                            </option>
-                          ))}
-                        </select>
+                        <div className={`w-full pl-11 pr-4 py-3 border rounded-lg bg-white flex items-center justify-between ${
+                          errors.department ? 'border-red-300' : 'border-gray-300'
+                        } ${formData.siret.length === 14 ? 'bg-gray-100' : ''}`}>
+                          <span className={formData.department ? 'text-gray-900 font-semibold' : 'text-gray-500'}>
+                            {formData.department 
+                              ? `${formData.department} - ${DEPARTMENTS.find(d => d.code === formData.department)?.name}`
+                              : 'Sélectionner...'}
+                          </span>
+                          {formData.siret.length === 14 && (
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                          )}
+                        </div>
                       </div>
                       {errors.department && <p className="text-red-600 text-xs mt-1">{errors.department}</p>}
+                      {formData.siret.length === 14 && (
+                        <p className="text-xs text-green-600 mt-1">✓ Auto-rempli depuis le SIRET</p>
+                      )}
                     </div>
                   </div>
                 </div>
