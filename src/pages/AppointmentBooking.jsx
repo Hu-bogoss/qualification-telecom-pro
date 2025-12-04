@@ -125,58 +125,144 @@ const AppointmentBooking = () => {
     setSiretError('');
 
     try {
-      // API SIRÈNE publique OpenDataSoft (données officielle INSEE)
-      // Pas de token requis, totalement gratuit
-      const encodedSiret = encodeURIComponent(`"${siret}"`);
-      const response = await fetch(
-        `https://data.opendatasoft.com/api/v2/catalog/datasets/sirene_v3/records?where=siret=${encodedSiret}&limit=1`,
-        {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json'
-          }
-        }
-      );
-
-      if (!response.ok) {
-        setSiretError('SIRET non trouvé. Veuillez saisir manuellement.');
+      // Essayer d'abord API Pappers (plus fiable)
+      const papersResponse = await tryPappersAPI(siret);
+      if (papersResponse) {
         setSiretLoading(false);
         return;
       }
 
-      const data = await response.json();
-
-      if (data.results && data.results.length > 0) {
-        const record = data.results[0].record.fields;
-        const codePostal = record.code_postal || '';
-        const department = codePostal.substring(0, 2);
-
-        setFormData(prev => ({
-          ...prev,
-          company: record.nom_commercial || record.denomination || record.enseigne || 'Entreprise',
-          address: record.adresse_complete || '',
-          postalCode: codePostal,
-          city: record.libelle_commune || '',
-          department: department
-        }));
-
-        setErrors(prev => ({
-          ...prev,
-          company: '',
-          address: '',
-          postalCode: '',
-          city: '',
-          department: ''
-        }));
-      } else {
-        setSiretError('SIRET non trouvé. Veuillez saisir manuellement.');
+      // Fallback: API OpenDataSoft
+      const odResponse = await tryOpenDataSoftAPI(siret);
+      if (odResponse) {
+        setSiretLoading(false);
+        return;
       }
+
+      // Fallback: API Verifier (basique)
+      const verifierResponse = await tryVerifierAPI(siret);
+      if (verifierResponse) {
+        setSiretLoading(false);
+        return;
+      }
+
+      setSiretError('SIRET non trouvé. Veuillez saisir manuellement.');
     } catch (error) {
       console.error('Erreur API SIRÈNE:', error);
       setSiretError('Erreur de recherche. Veuillez saisir manuellement.');
     } finally {
       setSiretLoading(false);
     }
+  };
+
+  const tryPappersAPI = async (siret) => {
+    try {
+      const response = await fetch(
+        `https://api.pappers.fr/v2/company?siret=${siret}`,
+        { method: 'GET', headers: { 'Accept': 'application/json' } }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.company) {
+          const codePostal = data.company.postal_code || '';
+          const department = codePostal.substring(0, 2);
+
+          setFormData(prev => ({
+            ...prev,
+            company: data.company.name || 'Entreprise',
+            address: data.company.address || '',
+            postalCode: codePostal,
+            city: data.company.city || '',
+            department: department
+          }));
+
+          setErrors(prev => ({
+            ...prev,
+            company: '', address: '', postalCode: '', city: '', department: ''
+          }));
+
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error('Erreur Pappers API:', error);
+    }
+    return false;
+  };
+
+  const tryOpenDataSoftAPI = async (siret) => {
+    try {
+      const response = await fetch(
+        `https://data.opendatasoft.com/api/v2/catalog/datasets/sirene_v3/records?where=siret%3D%22${siret}%22&limit=1`,
+        { method: 'GET', headers: { 'Accept': 'application/json' } }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.results && data.results.length > 0) {
+          const record = data.results[0].record.fields;
+          const codePostal = record.code_postal || '';
+          const department = codePostal.substring(0, 2);
+
+          setFormData(prev => ({
+            ...prev,
+            company: record.nom_commercial || record.denomination || 'Entreprise',
+            address: record.adresse_complete || '',
+            postalCode: codePostal,
+            city: record.libelle_commune || '',
+            department: department
+          }));
+
+          setErrors(prev => ({
+            ...prev,
+            company: '', address: '', postalCode: '', city: '', department: ''
+          }));
+
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error('Erreur OpenDataSoft API:', error);
+    }
+    return false;
+  };
+
+  const tryVerifierAPI = async (siret) => {
+    try {
+      // Verifier.com API (basique, sans authentification)
+      const response = await fetch(
+        `https://api.verifier.com/v1/company/siret/${siret}`,
+        { method: 'GET', headers: { 'Accept': 'application/json' } }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data) {
+          const codePostal = data.postal_code || '';
+          const department = codePostal.substring(0, 2);
+
+          setFormData(prev => ({
+            ...prev,
+            company: data.name || 'Entreprise',
+            address: data.address || '',
+            postalCode: codePostal,
+            city: data.city || '',
+            department: department
+          }));
+
+          setErrors(prev => ({
+            ...prev,
+            company: '', address: '', postalCode: '', city: '', department: ''
+          }));
+
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error('Erreur Verifier API:', error);
+    }
+    return false;
   };
 
   const handleSiretChange = (value) => {
