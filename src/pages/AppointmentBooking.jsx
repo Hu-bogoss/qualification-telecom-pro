@@ -125,56 +125,39 @@ const AppointmentBooking = () => {
     setSiretError('');
 
     try {
-      const mockDatabase = {
-        '12345678901234': {
-          company: 'TechSolutions SARL',
-          address: '123 Avenue des Champs-Élysées',
-          postalCode: '75008',
-          city: 'Paris',
-          department: '75'
-        },
-        '98765432109876': {
-          company: 'Innovation Digital SAS',
-          address: '45 Rue de la République',
-          postalCode: '69002',
-          city: 'Lyon',
-          department: '69'
-        },
-        '11223344556677': {
-          company: 'Marseille Telecom EURL',
-          address: '78 La Canebière',
-          postalCode: '13001',
-          city: 'Marseille',
-          department: '13'
-        },
-        '33445566778899': {
-          company: 'Toulouse Tech SA',
-          address: '156 Rue du Faubourg Saint-Honoré',
-          postalCode: '31000',
-          city: 'Toulouse',
-          department: '31'
-        },
-        '55667788990011': {
-          company: 'Nice Innovation SARL',
-          address: '89 Promenade des Anglais',
-          postalCode: '06000',
-          city: 'Nice',
-          department: '06'
-        },
-      };
+      // API SIRÈNE publique OpenDataSoft (données officielle INSEE)
+      // Pas de token requis, totalement gratuit
+      const encodedSiret = encodeURIComponent(`"${siret}"`);
+      const response = await fetch(
+        `https://data.opendatasoft.com/api/v2/catalog/datasets/sirene_v3/records?where=siret=${encodedSiret}&limit=1`,
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json'
+          }
+        }
+      );
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!response.ok) {
+        setSiretError('SIRET non trouvé. Veuillez saisir manuellement.');
+        setSiretLoading(false);
+        return;
+      }
 
-      if (mockDatabase[siret]) {
-        const data = mockDatabase[siret];
+      const data = await response.json();
+
+      if (data.results && data.results.length > 0) {
+        const record = data.results[0].record.fields;
+        const codePostal = record.code_postal || '';
+        const department = codePostal.substring(0, 2);
 
         setFormData(prev => ({
           ...prev,
-          company: data.company,
-          address: data.address,
-          postalCode: data.postalCode,
-          city: data.city,
-          department: data.department
+          company: record.nom_commercial || record.denomination || record.enseigne || 'Entreprise',
+          address: record.adresse_complete || '',
+          postalCode: codePostal,
+          city: record.libelle_commune || '',
+          department: department
         }));
 
         setErrors(prev => ({
@@ -189,8 +172,8 @@ const AppointmentBooking = () => {
         setSiretError('SIRET non trouvé. Veuillez saisir manuellement.');
       }
     } catch (error) {
-      console.error('Erreur:', error);
-      setSiretError('Erreur de connexion.');
+      console.error('Erreur API SIRÈNE:', error);
+      setSiretError('Erreur de recherche. Veuillez saisir manuellement.');
     } finally {
       setSiretLoading(false);
     }
