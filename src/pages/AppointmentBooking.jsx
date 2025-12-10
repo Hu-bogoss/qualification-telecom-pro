@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
   Calendar,
   Clock,
@@ -12,61 +12,120 @@ import {
   ArrowLeft,
   Shield,
   CheckCircle,
-  ChevronRight
+  ChevronRight,
+  AlertCircle
 } from 'lucide-react';
 
-// French departments
 const DEPARTMENTS = [
-  { code: '57', name: 'Moselle' },
-  { code: '54', name: 'Meurthe-et-Moselle' },
-  { code: '76', name: 'Seine-Maritime' },
-  { code: '51', name: 'Marne' },
+  { code: '01', name: 'Ain' },
   { code: '02', name: 'Aisne' },
+  { code: '03', name: 'Allier' },
+  { code: '04', name: 'Alpes-de-Haute-Provence' },
+  { code: '05', name: 'Hautes-Alpes' },
+  { code: '06', name: 'Alpes-Maritimes' },
+  { code: '07', name: 'Ardèche' },
   { code: '08', name: 'Ardennes' },
+  { code: '09', name: 'Ariège' },
   { code: '10', name: 'Aube' },
-  { code: '52', name: 'Haute-Marne' },
-  { code: '55', name: 'Meuse' },
-  { code: '77', name: 'Seine-et-Marne' },
-  { code: '80', name: 'Somme' },
-  { code: '60', name: 'Oise' },
-  { code: '95', name: 'Val-d\'Oise' },
-  { code: '62', name: 'Pas-de-Calais' },
-  { code: '91', name: 'Essonne' },
-  { code: '94', name: 'Val-de-Marne' },
-  { code: '44', name: 'Loire-Atlantique' },
-  { code: '35', name: 'Ille-et-Vilaine' },
-  { code: '53', name: 'Mayenne' },
-  { code: '56', name: 'Morbihan' },
-  { code: '29', name: 'Finistère' },
-  { code: '85', name: 'Vendée' },
+  { code: '11', name: 'Aude' },
+  { code: '12', name: 'Aveyron' },
+  { code: '13', name: 'Bouches-du-Rhône' },
+  { code: '14', name: 'Calvados' },
+  { code: '15', name: 'Cantal' },
+  { code: '16', name: 'Charente' },
+  { code: '17', name: 'Charente-Maritime' },
+  { code: '18', name: 'Cher' },
+  { code: '19', name: 'Corrèze' },
+  { code: '21', name: 'Côte-d\'Or' },
   { code: '22', name: 'Côtes-d\'Armor' },
+  { code: '23', name: 'Creuse' },
+  { code: '24', name: 'Dordogne' },
+  { code: '25', name: 'Doubs' },
+  { code: '26', name: 'Drôme' },
+  { code: '27', name: 'Eure' },
+  { code: '28', name: 'Eure-et-Loir' },
+  { code: '29', name: 'Finistère' },
+  { code: '2A', name: 'Corse-du-Sud' },
+  { code: '2B', name: 'Haute-Corse' },
+  { code: '30', name: 'Gard' },
+  { code: '31', name: 'Haute-Garonne' },
+  { code: '32', name: 'Gers' },
   { code: '33', name: 'Gironde' },
+  { code: '34', name: 'Hérault' },
+  { code: '35', name: 'Ille-et-Vilaine' },
+  { code: '36', name: 'Indre' },
+  { code: '37', name: 'Indre-et-Loire' },
+  { code: '38', name: 'Isère' },
+  { code: '39', name: 'Jura' },
+  { code: '40', name: 'Landes' },
+  { code: '41', name: 'Loir-et-Cher' },
+  { code: '42', name: 'Loire' },
+  { code: '43', name: 'Haute-Loire' },
+  { code: '44', name: 'Loire-Atlantique' },
+  { code: '45', name: 'Loiret' },
+  { code: '46', name: 'Lot' },
   { code: '47', name: 'Lot-et-Garonne' },
+  { code: '48', name: 'Lozère' },
+  { code: '49', name: 'Maine-et-Loire' },
+  { code: '50', name: 'Manche' },
+  { code: '51', name: 'Marne' },
+  { code: '52', name: 'Haute-Marne' },
+  { code: '53', name: 'Mayenne' },
+  { code: '54', name: 'Meurthe-et-Moselle' },
+  { code: '55', name: 'Meuse' },
+  { code: '56', name: 'Morbihan' },
+  { code: '57', name: 'Moselle' },
+  { code: '58', name: 'Nièvre' },
+  { code: '59', name: 'Nord' },
+  { code: '60', name: 'Oise' },
+  { code: '61', name: 'Orne' },
+  { code: '62', name: 'Pas-de-Calais' },
+  { code: '63', name: 'Puy-de-Dôme' },
   { code: '64', name: 'Pyrénées-Atlantiques' },
   { code: '65', name: 'Hautes-Pyrénées' },
-  { code: '12', name: 'Aveyron' },
-  { code: '81', name: 'Tarn' },
-  { code: '31', name: 'Haute-Garonne' },
-  { code: '34', name: 'Hérault' },
-  { code: '30', name: 'Gard' },
-  { code: '82', name: 'Tarn-et-Garonne' },
+  { code: '66', name: 'Pyrénées-Orientales' },
+  { code: '67', name: 'Bas-Rhin' },
+  { code: '68', name: 'Haut-Rhin' },
   { code: '69', name: 'Rhône' },
-  { code: '03', name: 'Allier' },
+  { code: '70', name: 'Haute-Saône' },
+  { code: '71', name: 'Saône-et-Loire' },
+  { code: '72', name: 'Sarthe' },
+  { code: '73', name: 'Savoie' },
+  { code: '74', name: 'Haute-Savoie' },
+  { code: '75', name: 'Paris' },
+  { code: '76', name: 'Seine-Maritime' },
+  { code: '77', name: 'Seine-et-Marne' },
+  { code: '78', name: 'Yvelines' },
+  { code: '79', name: 'Deux-Sèvres' },
+  { code: '80', name: 'Somme' },
+  { code: '81', name: 'Tarn' },
+  { code: '82', name: 'Tarn-et-Garonne' },
   { code: '83', name: 'Var' },
-  { code: '06', name: 'Alpes-Maritimes' },
-  { code: '13', name: 'Bouches-du-Rhône' },
-  { code: '16', name: 'Charente' },
-  { code: '19', name: 'Corrèze' },
-  { code: '23', name: 'Creuse' },
-  { code: '87', name: 'Haute-Vienne' }
+  { code: '84', name: 'Vaucluse' },
+  { code: '85', name: 'Vendée' },
+  { code: '86', name: 'Vienne' },
+  { code: '87', name: 'Haute-Vienne' },
+  { code: '88', name: 'Vosges' },
+  { code: '89', name: 'Yonne' },
+  { code: '90', name: 'Territoire de Belfort' },
+  { code: '91', name: 'Essonne' },
+  { code: '92', name: 'Hauts-de-Seine' },
+  { code: '93', name: 'Seine-Saint-Denis' },
+  { code: '94', name: 'Val-de-Marne' },
+  { code: '95', name: 'Val-d\'Oise' }
 ];
 
 const AVAILABLE_TIMES = ['09:00', '11:00', '14:00', '16:00'];
 
 const AppointmentBooking = () => {
   const navigate = useNavigate();
+  const [siretLoading, setSiretLoading] = useState(false);
+  const [siretError, setSiretError] = useState('');
+  const [errors, setErrors] = useState({});
+
   const [formData, setFormData] = useState({
     company: '',
+    siret: '',
     firstName: '',
     lastName: '',
     email: '',
@@ -74,48 +133,35 @@ const AppointmentBooking = () => {
     address: '',
     city: '',
     postalCode: '',
+    department: '',
     preferredDate: '',
     preferredTime: '',
-    siret: '',
-    department: '',
     finalConsent: false,
+    timestamp: new Date().toISOString()
   });
-  const [siretLoading, setSiretLoading] = useState(false);
-  const [siretError, setSiretError] = useState('');
-  const [errors, setErrors] = useState({});
+
   const [availableDates, setAvailableDates] = useState([]);
-
-  const generateAvailableDates = () => {
-    const dates = [];
-    const today = new Date();
-
-    // Générer 60 jours de disponibilité
-    for (let i = 1; i <= 60; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-
-      // Passer les weekends (0 = dimanche, 6 = samedi)
-      if (date.getDay() !== 0 && date.getDay() !== 6) {
-        dates.push(date.toISOString().split('T')[0]);
-      }
-    }
-
-    setAvailableDates(dates);
-  };
+  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     generateAvailableDates();
   }, []);
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+  const generateAvailableDates = () => {
+    const dates = [];
+    const today = new Date();
+    
+    for (let i = 1; i <= 60; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() + i);
+      
+      const dayOfWeek = date.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        dates.push(date.toISOString().split('T')[0]);
+      }
     }
+    
+    setAvailableDates(dates);
   };
 
   const searchSiretData = async (siret) => {
@@ -125,109 +171,38 @@ const AppointmentBooking = () => {
     setSiretError('');
 
     try {
-      // Base de données mock avec SIRET de test
-      // À remplacer par une vraie API backend une fois le site déployé
-      const mockDatabase = {
-        '12345678901234': {
-          company: 'TechSolutions SARL',
-          address: '123 Avenue des Champs-Élysées',
-          postalCode: '75008',
-          city: 'Paris',
-          department: '75'
-        },
-        '98765432109876': {
-          company: 'Innovation Digital SAS',
-          address: '45 Rue de la République',
-          postalCode: '69002',
-          city: 'Lyon',
-          department: '69'
-        },
-        '11223344556677': {
-          company: 'Marseille Telecom EURL',
-          address: '78 La Canebière',
-          postalCode: '13001',
-          city: 'Marseille',
-          department: '13'
-        },
-        '33445566778899': {
-          company: 'Toulouse Tech SA',
-          address: '156 Rue du Faubourg Saint-Honoré',
-          postalCode: '31000',
-          city: 'Toulouse',
-          department: '31'
-        },
-        '55667788990011': {
-          company: 'Nice Innovation SARL',
-          address: '89 Promenade des Anglais',
-          postalCode: '06000',
-          city: 'Nice',
-          department: '06'
-        },
-        '77889900112233': {
-          company: 'Strasbourg Digital SAS',
-          address: '234 Grande Rue',
-          postalCode: '67000',
-          city: 'Strasbourg',
-          department: '67'
-        },
-        '99001122334455': {
-          company: 'Bordeaux Solutions EURL',
-          address: '67 Cours de l\'Intendance',
-          postalCode: '33000',
-          city: 'Bordeaux',
-          department: '33'
-        },
-        '13579246801357': {
-          company: 'Lille Telecom SA',
-          address: '145 Rue Nationale',
-          postalCode: '59000',
-          city: 'Lille',
-          department: '59'
-        },
-        '24681357902468': {
-          company: 'Nantes Digital SARL',
-          address: '78 Rue Crébillon',
-          postalCode: '44000',
-          city: 'Nantes',
-          department: '44'
-        },
-        '36925814703692': {
-          company: 'Rennes Tech SAS',
-          address: '123 Rue Saint-Malo',
-          postalCode: '35000',
-          city: 'Rennes',
-          department: '35'
+      const response = await fetch(
+        `https://data.opendatasoft.com/api/v2/catalog/datasets/sirene_v3/records?where=siret%3D%22${siret}%22&limit=1`,
+        { method: 'GET', headers: { 'Accept': 'application/json' } }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.results && data.results.length > 0) {
+          const record = data.results[0].record.fields;
+          const codePostal = record.code_postal || '';
+          const department = codePostal.substring(0, 2);
+
+          setFormData(prev => ({
+            ...prev,
+            company: record.nom_commercial || record.denomination || 'Entreprise',
+            address: record.adresse_complete || '',
+            postalCode: codePostal,
+            city: record.libelle_commune || '',
+            department: department
+          }));
+
+          setErrors(prev => ({
+            ...prev,
+            company: '', address: '', postalCode: '', city: '', department: ''
+          }));
+          return;
         }
-      };
-
-      // Simulation d'un délai réseau
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      if (mockDatabase[siret]) {
-        const data = mockDatabase[siret];
-
-        setFormData(prev => ({
-          ...prev,
-          company: data.company,
-          address: data.address,
-          postalCode: data.postalCode,
-          city: data.city,
-          department: data.department
-        }));
-
-        setErrors(prev => ({
-          ...prev,
-          company: '',
-          address: '',
-          postalCode: '',
-          city: '',
-          department: ''
-        }));
-      } else {
-        setSiretError('SIRET non trouvé. Veuillez saisir manuellement les données.');
       }
+
+      setSiretError('SIRET non trouvé. Veuillez saisir manuellement.');
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Erreur API SIRÈNE:', error);
       setSiretError('Erreur de recherche. Veuillez saisir manuellement.');
     } finally {
       setSiretLoading(false);
@@ -247,27 +222,16 @@ const AppointmentBooking = () => {
     }
   };
 
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.company.trim()) newErrors.company = 'Nom de l\'entreprise requis';
-    if (!formData.firstName.trim()) newErrors.firstName = 'Prénom requis';
-    if (!formData.lastName.trim()) newErrors.lastName = 'Nom requis';
-    if (!formData.email.trim() || !formData.email.includes('@')) {
-      newErrors.email = 'Email valide requis';
-    }
-    if (!formData.phone.trim()) newErrors.phone = 'Téléphone requis';
-    if (!formData.siret.trim()) newErrors.siret = 'Numéro SIRET requis'
-    else if (formData.siret.length !== 14) newErrors.siret = 'SIRET doit contenir 14 chiffres';
-    if (!formData.department.trim()) newErrors.department = 'Département requis';
-    if (!formData.address.trim()) newErrors.address = 'Adresse requise';
-    if (!formData.city.trim()) newErrors.city = 'Ville requise';
-    if (!formData.postalCode.trim()) newErrors.postalCode = 'Code postal requis';
-    if (!formData.preferredDate) newErrors.preferredDate = 'Date requise';
-    if (!formData.preferredTime) newErrors.preferredTime = 'Heure requise';
-    if (!formData.finalConsent) newErrors.finalConsent = 'Consentement requis';
-
-    return newErrors;
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value,
+      timestamp: new Date().toISOString()
+    }));
+    setErrors(prev => ({
+      ...prev,
+      [field]: ''
+    }));
   };
 
   const isFormValid = () => {
@@ -281,481 +245,428 @@ const AppointmentBooking = () => {
       formData.address.trim() &&
       formData.city.trim() &&
       formData.postalCode.trim() &&
+      formData.department.trim() &&
       formData.preferredDate &&
       formData.preferredTime &&
-      formData.finalConsent &&
-      formData.department.trim()
+      formData.finalConsent
     );
-  };
-
-  const handleSubmit = () => {
-    const validationErrors = validateForm();
-
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    const appointmentData = {
-      ...formData,
-      timestamp: new Date().toISOString(),
-      status: 'confirmed',
-      id: Date.now().toString()
-    };
-
-    localStorage.setItem('appointmentData', JSON.stringify(appointmentData));
-    console.log('Appointment booked:', appointmentData);
-
-    navigate('/success');
-  };
-
-  const handleBack = () => {
-    navigate('/results');
   };
 
   const formatDate = (dateStr) => {
     const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('fr-FR', {
+    return new Intl.DateTimeFormat('fr-FR', {
       weekday: 'short',
       day: 'numeric',
       month: 'short'
-    });
+    }).format(date);
   };
 
   const formatDateFull = (dateStr) => {
     const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('fr-FR', {
+    return new Intl.DateTimeFormat('fr-FR', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric'
-    });
+    }).format(date);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!isFormValid()) {
+      alert('Veuillez remplir tous les champs');
+      return;
+    }
+
+    // Sauvegarder dans localStorage
+    localStorage.setItem('appointmentData', JSON.stringify(formData));
+
+    // Envoyer au backend
+    try {
+      const response = await fetch('https://qualification-telecom-backend-production.up.railway.app/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company: formData.company,
+          siret: formData.siret,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          postalCode: formData.postalCode,
+          department: formData.department,
+          appointmentDate: formData.preferredDate,
+          appointmentTime: formData.preferredTime,
+          status: 'booked',
+          consentContact: formData.finalConsent,
+          source: 'form_appointment'
+        })
+      });
+
+      const data = await response.json();
+      console.log('RDV sauvegardé au backend:', data);
+    } catch (error) {
+      console.error('Erreur envoi backend:', error);
+    }
+
+    navigate('/success');
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Fixed Header */}
-      <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-md z-50 border-b border-gray-100">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="text-2xl font-bold text-blue-600">TelecomAudit</div>
-          <div className="text-sm text-gray-600">Étape 4/4 - Planifiez votre audit</div>
-        </div>
-      </nav>
+    <motion.div
+      className="min-h-screen bg-gray-50 py-8"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="max-w-6xl mx-auto px-4">
+        {/* Header */}
+        <motion.div
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="mb-8"
+        >
+          <div className="flex items-center space-x-4 mb-4">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full">
+              <Calendar className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900">Planifiez votre audit</h1>
+              <p className="text-gray-600 mt-1">Expert se déplace sur site (30-45 min)</p>
+            </div>
+          </div>
+          <div className="inline-block px-4 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
+            Étape 4/4
+          </div>
+        </motion.div>
 
-      <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
-          {/* Hero Section */}
+        {/* Main Content */}
+        <div className="grid grid-cols-5 gap-8">
+          {/* Formulaire - 3 colonnes */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-20"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="col-span-3"
           >
-            <motion.div
-              animate={{ scale: [1, 1.1, 1] }}
-              transition={{ duration: 1 }}
-              className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-8"
-            >
-              <Calendar className="w-8 h-8 text-blue-600" strokeWidth={2} />
-            </motion.div>
-
-            <motion.h1
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="text-5xl md:text-6xl font-bold text-gray-900 mb-6"
-            >
-              Planifiez votre audit
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="text-xl text-gray-600 max-w-3xl mx-auto"
-            >
-              Un expert se déplace pour un diagnostic personnalisé sur site (30-45 minutes)
-            </motion.p>
-          </motion.div>
-
-          {/* Two Column Layout */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.8 }}
-            className="grid lg:grid-cols-5 gap-12"
-          >
-            {/* Left: Form (3 columns) */}
-            <div className="lg:col-span-3 space-y-8">
-              {/* Contact Information Card */}
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-8">
-                  Informations de contact
-                </h2>
-
-                <div className="space-y-6">
-                  {/* Company & SIRET Row */}
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        Entreprise *
-                      </label>
-                      <div className="relative">
-                        <Building className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                        <input
-                          type="text"
-                          placeholder="Nom"
-                          className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                            errors.company ? 'border-red-300' : 'border-gray-300'
-                          }`}
-                          value={formData.company}
-                          onChange={(e) => handleInputChange('company', e.target.value)}
-                        />
-                      </div>
-                      {errors.company && <p className="text-red-600 text-xs mt-1">{errors.company}</p>}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        SIRET *
-                      </label>
-                      <div className="relative">
-                        <Building className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                        <input
-                          type="text"
-                          placeholder="14 chiffres"
-                          className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                            errors.siret ? 'border-red-300' : 'border-gray-300'
-                          }`}
-                          value={formData.siret}
-                          onChange={(e) => handleSiretChange(e.target.value)}
-                          maxLength="14"
-                        />
-                        {siretLoading && (
-                          <div className="absolute right-3 top-3.5">
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                          </div>
-                        )}
-                      </div>
-                      {errors.siret && <p className="text-red-600 text-xs mt-1">{errors.siret}</p>}
-                      {siretError && <p className="text-orange-600 text-xs mt-1">{siretError}</p>}
-                    </div>
-                  </div>
-
-                  {/* Prenom & Nom Row */}
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        Prénom *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Votre prénom"
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                          errors.firstName ? 'border-red-300' : 'border-gray-300'
-                        }`}
-                        value={formData.firstName}
-                        onChange={(e) => handleInputChange('firstName', e.target.value)}
-                      />
-                      {errors.firstName && <p className="text-red-600 text-xs mt-1">{errors.firstName}</p>}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        Nom *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Votre nom"
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                          errors.lastName ? 'border-red-300' : 'border-gray-300'
-                        }`}
-                        value={formData.lastName}
-                        onChange={(e) => handleInputChange('lastName', e.target.value)}
-                      />
-                      {errors.lastName && <p className="text-red-600 text-xs mt-1">{errors.lastName}</p>}
-                    </div>
-                  </div>
-
-                  {/* Email & Phone Row */}
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        Email *
-                      </label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                        <input
-                          type="email"
-                          placeholder="vous@entreprise.fr"
-                          className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                            errors.email ? 'border-red-300' : 'border-gray-300'
-                          }`}
-                          value={formData.email}
-                          onChange={(e) => handleInputChange('email', e.target.value)}
-                        />
-                      </div>
-                      {errors.email && <p className="text-red-600 text-xs mt-1">{errors.email}</p>}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        Téléphone *
-                      </label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                        <input
-                          type="tel"
-                          placeholder="01 23 45 67 89"
-                          className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                            errors.phone ? 'border-red-300' : 'border-gray-300'
-                          }`}
-                          value={formData.phone}
-                          onChange={(e) => handleInputChange('phone', e.target.value)}
-                        />
-                      </div>
-                      {errors.phone && <p className="text-red-600 text-xs mt-1">{errors.phone}</p>}
-                    </div>
-                  </div>
-
-                  {/* Address */}
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Entreprise et SIRET */}
+                <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-semibold text-gray-900 mb-2">
-                      Adresse *
+                      Entreprise *
+                    </label>
+                    <div className="relative">
+                      <Building className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={formData.company}
+                        onChange={(e) => handleInputChange('company', e.target.value)}
+                        placeholder="Nom entreprise"
+                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    {errors.company && <p className="text-red-600 text-xs mt-1">{errors.company}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      SIRET *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={formData.siret}
+                        onChange={(e) => handleSiretChange(e.target.value)}
+                        placeholder="14 chiffres"
+                        maxLength="14"
+                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                          errors.siret ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                      />
+                      {siretLoading && (
+                        <div className="absolute right-3 top-3.5">
+                          <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full" />
+                        </div>
+                      )}
+                    </div>
+                    {siretError && <p className="text-red-600 text-xs mt-1">{siretError}</p>}
+                    {errors.siret && <p className="text-red-600 text-xs mt-1">{errors.siret}</p>}
+                  </div>
+                </div>
+
+                {/* Prénom et Nom */}
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Prénom *
                     </label>
                     <input
                       type="text"
-                      placeholder="Adresse complète"
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                        errors.address ? 'border-red-300' : 'border-gray-300'
-                      }`}
+                      value={formData.firstName}
+                      onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      placeholder="Votre prénom"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {errors.firstName && <p className="text-red-600 text-xs mt-1">{errors.firstName}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Nom *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.lastName}
+                      onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      placeholder="Votre nom"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {errors.lastName && <p className="text-red-600 text-xs mt-1">{errors.lastName}</p>}
+                  </div>
+                </div>
+
+                {/* Email et Téléphone */}
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Email *
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        placeholder="vous@entreprise.fr"
+                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    {errors.email && <p className="text-red-600 text-xs mt-1">{errors.email}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Téléphone *
+                    </label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+                      <input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        placeholder="+33 1 23 45 67 89"
+                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    {errors.phone && <p className="text-red-600 text-xs mt-1">{errors.phone}</p>}
+                  </div>
+                </div>
+
+                {/* Adresse */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Adresse *
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+                    <input
+                      type="text"
                       value={formData.address}
                       onChange={(e) => handleInputChange('address', e.target.value)}
+                      placeholder="123 Rue Test"
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
-                    {errors.address && <p className="text-red-600 text-xs mt-1">{errors.address}</p>}
+                  </div>
+                  {errors.address && <p className="text-red-600 text-xs mt-1">{errors.address}</p>}
+                </div>
+
+                {/* Ville, CP, Département */}
+                <div className="grid grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Ville *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.city}
+                      onChange={(e) => handleInputChange('city', e.target.value)}
+                      placeholder="Paris"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {errors.city && <p className="text-red-600 text-xs mt-1">{errors.city}</p>}
                   </div>
 
-                  {/* City & PostalCode & Department Row */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        Ville *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Ville"
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                          errors.city ? 'border-red-300' : 'border-gray-300'
-                        }`}
-                        value={formData.city}
-                        onChange={(e) => handleInputChange('city', e.target.value)}
-                      />
-                      {errors.city && <p className="text-red-600 text-xs mt-1">{errors.city}</p>}
-                    </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Code Postal *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.postalCode}
+                      onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                      placeholder="75001"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {errors.postalCode && <p className="text-red-600 text-xs mt-1">{errors.postalCode}</p>}
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        CP *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="75001"
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                          errors.postalCode ? 'border-red-300' : 'border-gray-300'
-                        }`}
-                        value={formData.postalCode}
-                        onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                      />
-                      {errors.postalCode && <p className="text-red-600 text-xs mt-1">{errors.postalCode}</p>}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        Département *
-                      </label>
-                      <div className="relative">
-                        <MapPin className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                        <div className={`w-full pl-11 pr-4 py-3 border rounded-lg bg-white flex items-center justify-between ${
-                          errors.department ? 'border-red-300' : 'border-gray-300'
-                        } ${formData.siret.length === 14 ? 'bg-gray-100' : ''}`}>
-                          <span className={formData.department ? 'text-gray-900 font-semibold' : 'text-gray-500'}>
-                            {formData.department 
-                              ? `${formData.department} - ${DEPARTMENTS.find(d => d.code === formData.department)?.name}`
-                              : 'Sélectionner...'}
-                          </span>
-                          {formData.siret.length === 14 && (
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                          )}
-                        </div>
-                      </div>
-                      {errors.department && <p className="text-red-600 text-xs mt-1">{errors.department}</p>}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Département *
+                    </label>
+                    <div className={`w-full px-4 py-3 border rounded-lg bg-white flex items-center justify-between ${
+                      errors.department ? 'border-red-300' : 'border-gray-300'
+                    } ${formData.siret.length === 14 ? 'bg-gray-100' : ''}`}>
+                      <span className={formData.department ? 'text-gray-900 font-semibold' : 'text-gray-500'}>
+                        {formData.department 
+                          ? `${formData.department} - ${DEPARTMENTS.find(d => d.code === formData.department)?.name}`
+                          : 'Sélectionner...'}
+                      </span>
                       {formData.siret.length === 14 && (
-                        <p className="text-xs text-green-600 mt-1">✓ Auto-rempli depuis le SIRET</p>
+                        <CheckCircle className="h-4 w-4 text-green-600" />
                       )}
                     </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Consent */}
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
-                <div className="flex items-start space-x-4">
-                  <input
-                    type="checkbox"
-                    checked={formData.finalConsent}
-                    onChange={(e) => handleInputChange('finalConsent', e.target.checked)}
-                    className="mt-1 h-5 w-5 text-blue-600 border-gray-300 rounded cursor-pointer"
-                  />
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-900 leading-relaxed">
-                      Je confirme vouloir bénéficier d'un <strong>audit télécom gratuit</strong> et autorise le conseiller à me contacter pour confirmer ce rendez-vous.
-                    </p>
-                    {errors.finalConsent && (
-                      <p className="text-red-600 text-xs mt-2">{errors.finalConsent}</p>
+                    {errors.department && <p className="text-red-600 text-xs mt-1">{errors.department}</p>}
+                    {formData.siret.length === 14 && (
+                      <p className="text-xs text-green-600 mt-1">✓ Auto-rempli depuis le SIRET</p>
                     )}
                   </div>
-                  <Shield className="h-5 w-5 text-green-600 flex-shrink-0 mt-1" />
                 </div>
-              </div>
 
-              {/* Navigation Buttons */}
-              <div className="flex items-center justify-between">
-                <motion.button
-                  onClick={handleBack}
-                  whileHover={{ scale: 1.05, x: -4 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 font-semibold transition"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                  <span>Retour</span>
-                </motion.button>
+                {/* Consentement */}
+                <div className="border-t pt-6">
+                  <label className="flex items-start space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.finalConsent}
+                      onChange={(e) => handleInputChange('finalConsent', e.target.checked)}
+                      className="w-5 h-5 text-blue-600 rounded mt-1"
+                    />
+                    <div className="flex items-start space-x-2">
+                      <Shield className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-gray-700">
+                        Je confirme vouloir bénéficier d'un audit télécom gratuit et j'accepte les conditions RGPD
+                      </span>
+                    </div>
+                  </label>
+                  {errors.finalConsent && <p className="text-red-600 text-xs mt-2">{errors.finalConsent}</p>}
+                </div>
 
-                <motion.button
-                  onClick={handleSubmit}
-                  disabled={!isFormValid()}
-                  whileHover={{ scale: isFormValid() ? 1.05 : 1 }}
-                  whileTap={{ scale: isFormValid() ? 0.95 : 1 }}
-                  className={`flex items-center space-x-2 px-8 py-4 rounded-lg font-semibold transition ${
-                    isFormValid()
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
-                      : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  <span>Confirmer</span>
-                  <ArrowRight className="w-5 h-5" />
-                </motion.button>
-              </div>
+                {/* Navigation */}
+                <div className="flex space-x-4 pt-6">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="button"
+                    onClick={() => navigate('/appointment')}
+                    className="flex items-center space-x-2 px-6 py-3 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-semibold"
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                    <span>Retour</span>
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    disabled={!isFormValid()}
+                    className={`flex-1 flex items-center justify-center space-x-2 px-6 py-3 rounded-lg transition font-semibold ${
+                      isFormValid()
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <span>Confirmer</span>
+                    <ArrowRight className="h-5 w-5" />
+                  </motion.button>
+                </div>
+              </form>
             </div>
+          </motion.div>
 
-            {/* Right: Calendar (2 columns) */}
-            <div className="lg:col-span-2">
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 shadow-sm p-8 sticky top-32">
-                <h2 className="text-2xl font-bold text-gray-900 mb-8">
-                  Sélectionnez une date
-                </h2>
+          {/* Calendar - 2 colonnes */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="col-span-2"
+          >
+            <div className="sticky top-32 bg-gradient-to-b from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 max-h-96 overflow-y-auto">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Dates disponibles</h3>
 
-                {!formData.department ? (
-                  <div className="text-center py-12">
-                    <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 font-medium">Sélectionnez votre département</p>
-                    <p className="text-sm text-gray-500 mt-2">pour voir les créneaux</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                    {availableDates.map((date) => {
-                      const isSelected = formData.preferredDate === date;
-                      const dateObj = new Date(date + 'T00:00:00');
+              <div className="space-y-2 mb-6">
+                {availableDates.map((date) => (
+                  <motion.button
+                    key={date}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleInputChange('preferredDate', date)}
+                    className={`w-full text-left px-4 py-3 rounded-lg border-2 transition ${
+                      formData.preferredDate === date
+                        ? 'border-blue-600 bg-white shadow-md'
+                        : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-gray-900">{formatDate(date)}</span>
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
 
-                      return (
+              {formData.preferredDate && (
+                <>
+                  <div className="border-t pt-6">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Horaires disponibles</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {AVAILABLE_TIMES.map((time) => (
                         <motion.button
-                          key={date}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          type="button"
-                          onClick={() => handleInputChange('preferredDate', date)}
-                          className={`w-full text-left p-4 rounded-xl border-2 transition ${
-                            isSelected
-                              ? 'border-blue-600 bg-white shadow-md'
-                              : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50'
+                          key={time}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleInputChange('preferredTime', time)}
+                          className={`flex items-center justify-center space-x-2 px-3 py-2 rounded-lg border-2 transition font-semibold ${
+                            formData.preferredTime === time
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'border-gray-300 text-gray-900 hover:border-blue-400 hover:bg-blue-50'
                           }`}
                         >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-semibold text-gray-900 text-sm">
-                                {formatDate(date)}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-0.5">
-                                {dateObj.toLocaleDateString('fr-FR', { weekday: 'long' })}
-                              </p>
-                            </div>
-                            <ChevronRight className={`w-5 h-5 transition ${isSelected ? 'text-blue-600' : 'text-gray-400'}`} />
-                          </div>
+                          <Clock className="h-4 w-4" />
+                          <span>{time}</span>
                         </motion.button>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
-                )}
 
-                {/* Time Selection */}
-                {formData.preferredDate && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-8 pt-8 border-t border-blue-200"
-                  >
-                    <p className="text-sm font-semibold text-gray-900 mb-4">Horaires disponibles</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      {AVAILABLE_TIMES.map((time) => {
-                        const isSelected = formData.preferredTime === time;
-                        return (
-                          <motion.button
-                            key={time}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            type="button"
-                            onClick={() => handleInputChange('preferredTime', time)}
-                            className={`flex items-center justify-center p-3 rounded-lg border-2 transition ${
-                              isSelected
-                                ? 'border-blue-600 bg-blue-600 text-white shadow-md'
-                                : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300'
-                            }`}
-                          >
-                            <Clock className="h-4 w-4 mr-1.5" />
-                            <span className="font-semibold">{time}</span>
-                          </motion.button>
-                        );
-                      })}
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Summary */}
-                {formData.preferredDate && formData.preferredTime && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-8 p-4 bg-white rounded-lg border-2 border-green-200"
-                  >
-                    <div className="flex items-start space-x-3">
-                      <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-xs font-semibold text-green-900 uppercase">Rendez-vous</p>
-                        <p className="text-sm font-semibold text-gray-900 mt-1">
-                          {formatDateFull(formData.preferredDate)}
-                        </p>
-                        <p className="text-sm text-gray-600 mt-0.5">
-                          À {formData.preferredTime}
-                        </p>
+                  {formData.preferredTime && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-6 p-4 bg-white border-2 border-green-200 rounded-lg"
+                    >
+                      <div className="flex items-start space-x-3">
+                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">✓ Rendez-vous</p>
+                          <p className="text-sm text-gray-600">{formatDateFull(formData.preferredDate)}</p>
+                          <p className="text-sm text-gray-600">À {formData.preferredTime}</p>
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
+                    </motion.div>
+                  )}
+                </>
+              )}
             </div>
           </motion.div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
