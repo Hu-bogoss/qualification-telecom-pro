@@ -39,6 +39,7 @@ const AppointmentBooking = () => {
   const navigate = useNavigate();
   const [siretLoading, setSiretLoading] = useState(false);
   const [siretError, setSiretError] = useState('');
+  const [manualEntryMode, setManualEntryMode] = useState(false);
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     company: '',
@@ -77,22 +78,22 @@ const AppointmentBooking = () => {
     setAvailableDates(dates);
   };
 
-  // Base de données Mock pour les SIRET de test (pour éviter les blocages API en dev)
+  // Base de données Mock pour tests immédiats
   const mockDatabase = {
-    '12345678901234': { company: 'TechSolutions SARL', address: '12 Avenue des Champs', postalCode: '75008', city: 'Paris', department: '75' },
+    '12345678901234': { company: 'Test Telecom SARL', address: '12 Avenue des Champs', postalCode: '75008', city: 'Paris', department: '75' },
+    '42309345100037': { company: 'ORANGE', address: '78 Rue Olivier de Serres', postalCode: '75015', city: 'Paris', department: '75' },
+    '40312195800056': { company: 'SFR', address: '16 Rue du Général Alain de Boissieu', postalCode: '75015', city: 'Paris', department: '75' },
     '98765432109876': { company: 'Innovation Digital SAS', address: '45 Rue de la République', postalCode: '69002', city: 'Lyon', department: '69' },
     '11223344556677': { company: 'Marseille Telecom EURL', address: '8 Boulevard du Prado', postalCode: '13006', city: 'Marseille', department: '13' },
-    '33445566778899': { company: 'Toulouse Tech SA', address: '3 Place du Capitole', postalCode: '31000', city: 'Toulouse', department: '31' },
-    '55667788990011': { company: 'Nice Innovation SARL', address: '10 Promenade des Anglais', postalCode: '06000', city: 'Nice', department: '06' },
-    '13579246801357': { company: 'Test Telecom SARL', address: '1 Rue de Test', postalCode: '75001', city: 'Paris', department: '75' }
   };
 
   const searchSiretData = async (siret) => {
     if (!siret || siret.length !== 14) return;
     setSiretLoading(true);
     setSiretError('');
+    setManualEntryMode(false); // Reset manual mode
 
-    // 1. Essai avec la base Mock d'abord
+    // 1. Essai avec la base Mock d'abord (Rapide & Fiable pour les tests)
     if (mockDatabase[siret]) {
       const data = mockDatabase[siret];
       setFormData(prev => ({
@@ -136,10 +137,12 @@ const AppointmentBooking = () => {
           return;
         }
       }
-      setSiretError('SIRET non trouvé. Veuillez saisir manuellement.');
+      // Si on arrive ici, rien trouvé
+      throw new Error("Not found");
     } catch (error) {
-      console.error('Erreur API SIRÈNE:', error);
-      setSiretError('Erreur de recherche. Veuillez saisir manuellement.');
+      console.log('Passage en mode manuel suite erreur/non-trouvé');
+      setSiretError('SIRET non reconnu. Veuillez remplir les champs manuellement.');
+      setManualEntryMode(true); // Active le mode manuel pour ne pas bloquer l'utilisateur
     } finally {
       setSiretLoading(false);
     }
@@ -162,6 +165,15 @@ const AppointmentBooking = () => {
       [field]: value,
       timestamp: new Date().toISOString()
     }));
+    
+    // Si l'utilisateur change le Code Postal manuellement, on met à jour le département
+    if (field === 'postalCode' && value.length >= 2) {
+       setFormData(prev => ({
+         ...prev,
+         department: value.substring(0, 2)
+       }));
+    }
+
     setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
@@ -261,20 +273,27 @@ const AppointmentBooking = () => {
                 { /* Entreprise et SIRET */ }
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-900 mb-2">Entreprise *</label>
-                    <div className="relative">
-                      <Building className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                      <input type="text" value={formData.company} onChange={(e) => handleInputChange('company', e.target.value)} placeholder="Nom entreprise" className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                    </div>
-                    {errors.company && <p className="text-red-600 text-xs mt-1">{errors.company}</p>}
-                  </div>
-                  <div>
                     <label className="block text-sm font-semibold text-gray-900 mb-2">SIRET *</label>
                     <div className="relative">
                       <input type="text" value={formData.siret} onChange={(e) => handleSiretChange(e.target.value)} placeholder="14 chiffres" maxLength="14" className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.siret ? 'border-red-300' : 'border-gray-300'}`} />
                       {siretLoading && <div className="absolute right-3 top-3.5"><div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full" /></div>}
                     </div>
-                    {siretError && <p className="text-red-600 text-xs mt-1">{siretError}</p>}
+                    {siretError && <p className="text-amber-600 text-xs mt-1">{siretError}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">Entreprise *</label>
+                    <div className="relative">
+                      <Building className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+                      <input 
+                        type="text" 
+                        value={formData.company} 
+                        onChange={(e) => handleInputChange('company', e.target.value)} 
+                        placeholder="Nom entreprise" 
+                        className={`w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${!manualEntryMode && !formData.company ? 'bg-gray-50' : 'bg-white'}`}
+                        readOnly={!manualEntryMode && formData.company.length > 0} // Modifiable seulement si mode manuel ou vide
+                      />
+                    </div>
+                    {errors.company && <p className="text-red-600 text-xs mt-1">{errors.company}</p>}
                   </div>
                 </div>
 
@@ -313,7 +332,14 @@ const AppointmentBooking = () => {
                   <label className="block text-sm font-semibold text-gray-900 mb-2">Adresse *</label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                    <input type="text" value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)} placeholder="123 Rue Test" className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                    <input 
+                      type="text" 
+                      value={formData.address} 
+                      onChange={(e) => handleInputChange('address', e.target.value)} 
+                      placeholder="123 Rue Test" 
+                      className={`w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${!manualEntryMode && !formData.address ? 'bg-gray-50' : 'bg-white'}`}
+                      readOnly={!manualEntryMode && formData.address.length > 0} 
+                    />
                   </div>
                 </div>
 
@@ -321,11 +347,25 @@ const AppointmentBooking = () => {
                 <div className="grid grid-cols-3 gap-6">
                   <div>
                     <label className="block text-sm font-semibold text-gray-900 mb-2">Ville *</label>
-                    <input type="text" value={formData.city} onChange={(e) => handleInputChange('city', e.target.value)} placeholder="Paris" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                    <input 
+                      type="text" 
+                      value={formData.city} 
+                      onChange={(e) => handleInputChange('city', e.target.value)} 
+                      placeholder="Paris" 
+                      className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${!manualEntryMode && !formData.city ? 'bg-gray-50' : 'bg-white'}`}
+                      readOnly={!manualEntryMode && formData.city.length > 0} 
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-900 mb-2">Code Postal *</label>
-                    <input type="text" value={formData.postalCode} onChange={(e) => handleInputChange('postalCode', e.target.value)} placeholder="75001" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                    <input 
+                      type="text" 
+                      value={formData.postalCode} 
+                      onChange={(e) => handleInputChange('postalCode', e.target.value)} 
+                      placeholder="75001" 
+                      className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${!manualEntryMode && !formData.postalCode ? 'bg-gray-50' : 'bg-white'}`}
+                      readOnly={!manualEntryMode && formData.postalCode.length > 0} 
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-900 mb-2">Département *</label>
@@ -335,7 +375,8 @@ const AppointmentBooking = () => {
                       </span>
                       {formData.siret.length === 14 && <CheckCircle className="h-4 w-4 text-green-600" />}
                     </div>
-                    {formData.siret.length === 14 && <p className="text-xs text-green-600 mt-1">✓ Auto-rempli depuis le SIRET</p>}
+                    {/* Fallback manuel si besoin: permet de savoir que c'est auto-géré */}
+                    {manualEntryMode && <p className="text-xs text-gray-500 mt-1">Déduit du Code Postal</p>}
                   </div>
                 </div>
 
