@@ -230,11 +230,37 @@ const BudgetForm = () => {
       return;
     }
 
-    localStorage.setItem('budgetData', JSON.stringify({
+    const budgetDataToSave = {
       ...formData,
       totalBudget: validation.totalBudget,
       isEligible: validation.isEligible
-    }));
+    };
+
+    localStorage.setItem('budgetData', JSON.stringify(budgetDataToSave));
+
+    // Envoyer au backend
+    fetch('https://qualification-telecom-backend-production.up.railway.app/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        company: 'Non renseigné',
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        operator: formData.operator,
+        fixedBudget: parseInt(formData.fixedBudget) || 0,
+        internetBudget: parseInt(formData.internetBudget) || 0,
+        cybersecurityBudget: parseInt(formData.cybersecurityBudget) || 0,
+        totalBudget: validation.totalBudget,
+        companySize: formData.companySize,
+        multiSite: formData.multiSite,
+        cybersecurity: formData.cybersecurity,
+        status: 'pending',
+        source: 'form_budget',
+        consentContact: true
+      })
+    }).catch(err => console.error('Backend error:', err));
 
     setCompleted(true);
     setTimeout(() => {
